@@ -3,10 +3,17 @@ from datetime import timedelta
 from fastapi import APIRouter, Depends, Query, Request
 
 from stockta.api.deps import get_valid_ticker
-from stockta.api.errors import DataSourceUnavailableError, InvalidRangeError
+from stockta.api.errors import (
+    DataInsufficientError,
+    DataSourceUnavailableError,
+    InvalidRangeError,
+)
 from stockta.api.schemas import Candle, CandlesResponse, PredictionResponse
-from stockta.data.calendar import last_completed_trading_day
+from stockta.config import INDICATOR_WARMUP_DAYS, WINDOW_LENGTH_DAYS
+from stockta.data.calendar import calendar_lookback_days, last_completed_trading_day
 from stockta.data.provider import DataProvider, DataProviderError
+from stockta.inference.predictor import InsufficientDataError, Predictor
+from stockta.inference.risk import annualized_volatility, risk_level
 
 router = APIRouter(prefix="/api/stocks", tags=["stocks"])
 
@@ -47,15 +54,49 @@ def get_candles(
 
 
 @router.get("/{ticker}/prediction", response_model=PredictionResponse)
-def get_prediction(ticker: str = Depends(get_valid_ticker)) -> PredictionResponse:
-    # Phase 6 前的 mock 回應：尚未整合訓練模型，回傳固定結構供前端開發使用。
-    # 待 stockta/inference/predictor.py 完成後，改為呼叫真實推論並移除 is_mock。
+def get_prediction(
+    request: Request, ticker: str = Depends(get_valid_ticker)
+) -> PredictionResponse:
+    predictor: Predictor | None = getattr(request.app.state, "predictor", None)
+    if predictor is None:
+        # 尚未訓練出 artifact 時的 mock 回應，前端以 is_mock 判斷顯示提示
+        return PredictionResponse(
+            ticker=ticker,
+            base_date=last_completed_trading_day(),
+            signal="觀望",
+            confidence=0.34,
+            risk="中",
+            model_version="mock-0.0.0",
+            is_mock=True,
+        )
+
+    provider: DataProvider = request.app.state.data_provider
+    end = last_completed_trading_day()
+    start = end - timedelta(days=calendar_lookback_days(WINDOW_LENGTH_DAYS, INDICATOR_WARMUP_DAYS))
+
+    try:
+        df = provider.get_ohlcv(ticker, start, end)
+    except DataProviderError as exc:
+        raise DataSourceUnavailableError(str(exc)) from exc
+
+    try:
+        pred = predictor.predict(df)
+    except InsufficientDataError as exc:
+        raise DataInsufficientError(str(exc)) from exc
+
+    risk = risk_level(annualized_volatility(df["close"]))
+
+    store = getattr(request.app.state, "prediction_store", None)
+    if store is not None:
+        # 線上預測落地（同 ticker+基準日+版本只記第一筆），累積競賽實證資料
+        store.record(ticker, pred.base_date, pred.signal, pred.confidence, predictor.version)
+
     return PredictionResponse(
         ticker=ticker,
-        base_date=last_completed_trading_day(),
-        signal="觀望",
-        confidence=0.34,
-        risk="中",
-        model_version="mock-0.0.0",
-        is_mock=True,
+        base_date=pred.base_date,
+        signal=pred.signal,
+        confidence=pred.confidence,
+        risk=risk,
+        model_version=predictor.version,
+        is_mock=False,
     )

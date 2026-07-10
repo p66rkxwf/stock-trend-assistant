@@ -11,9 +11,9 @@ frontend/node_modules/
 frontend/.next/
 
 # 訓練產物：模型權重與快取需忽略，但 metadata.json 進版控（見 stockta/ml/registry.py）
-backend/artifacts/*.pt
-backend/artifacts/*.joblib
-backend/artifacts/*.pkl
+backend/artifacts/**/*.pt
+backend/artifacts/**/*.joblib
+backend/artifacts/**/*.pkl
 backend/data_cache/
 backend/predictions.db
 

@@ -50,3 +50,28 @@ def test_prediction_mock_response_shape(client):
     assert body["signal"] in ("漲", "跌", "觀望")
     assert body["risk"] in ("低", "中", "高")
     assert body["is_mock"] is True
+
+
+def test_prediction_with_loaded_model(client_with_model):
+    r = client_with_model.get("/api/stocks/2330.TW/prediction")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["is_mock"] is False
+    assert body["model_version"] == "fake-1.0"
+    assert body["signal"] == "漲"
+    assert body["confidence"] == 0.71
+    assert body["risk"] in ("低", "中", "高")
+
+
+def test_model_info_with_loaded_model(client_with_model):
+    r = client_with_model.get("/api/model")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["is_mock"] is False
+    assert body["test_auc"] == 0.61
+
+
+def test_health_reports_model_loaded(client_with_model):
+    r = client_with_model.get("/health")
+    assert r.status_code == 200
+    assert r.json()["model_loaded"] is True

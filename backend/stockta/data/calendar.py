@@ -34,3 +34,17 @@ def warmup_lookback_days(
     緩衝是為了吸收假日造成的交易日密度落差（用日曆天數抓取，但視窗以交易日計）。
     """
     return window_length_days + indicator_warmup_days + buffer_days
+
+
+# 台股一年約 245 個交易日 / 365 個日曆天，取 1.6 倍換算並保留餘裕
+_TRADING_TO_CALENDAR_RATIO = 1.6
+
+
+def calendar_lookback_days(
+    window_length_days: int,
+    indicator_warmup_days: int,
+    buffer_days: int = 10,
+) -> int:
+    """推論抓取起日的回溯「日曆天數」（get_ohlcv 以日曆日期指定區間）。"""
+    trading_days = warmup_lookback_days(window_length_days, indicator_warmup_days, buffer_days)
+    return int(trading_days * _TRADING_TO_CALENDAR_RATIO) + 1

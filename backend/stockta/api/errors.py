@@ -35,6 +35,11 @@ class DataSourceUnavailableError(ApiError):
         super().__init__(503, "DATA_SOURCE_UNAVAILABLE", detail)
 
 
+class DataInsufficientError(ApiError):
+    def __init__(self, detail: str):
+        super().__init__(422, "INSUFFICIENT_DATA", detail)
+
+
 async def api_error_handler(request: Request, exc: ApiError) -> JSONResponse:
     return JSONResponse(
         status_code=exc.status_code,
