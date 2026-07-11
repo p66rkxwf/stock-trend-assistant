@@ -3,8 +3,39 @@
 不要在 features/、api/、frontend 各自維護一份設定副本——一律從這裡讀取。
 """
 
+import os
+import shutil
+import tempfile
 from pathlib import Path
 from zoneinfo import ZoneInfo
+
+
+def _fix_curl_ca_bundle() -> None:
+    """專案路徑含非 ASCII 字元（如「百萬專題」）時，libcurl 讀不到 venv 內
+    certifi 的 CA 檔（curl error 77），yfinance/curl_cffi 的所有 HTTPS 都會失敗。
+    對策：把 cacert.pem 複製到 ASCII 路徑並以 CURL_CA_BUNDLE 指定（已設定者不動）。
+    """
+    if os.environ.get("CURL_CA_BUNDLE"):
+        return
+    try:
+        import certifi
+
+        src = certifi.where()
+        if src.isascii():
+            return  # 路徑本來就沒問題
+        base = os.environ.get("LOCALAPPDATA") or tempfile.gettempdir()
+        if not base.isascii():
+            return  # 找不到 ASCII 落腳處，維持原行為（快取降級仍可運作）
+        target = Path(base) / "stockta" / "cacert.pem"
+        target.parent.mkdir(parents=True, exist_ok=True)
+        if not target.exists() or target.stat().st_size != Path(src).stat().st_size:
+            shutil.copyfile(src, target)
+        os.environ["CURL_CA_BUNDLE"] = str(target)
+    except Exception:
+        pass  # 盡力而為，不因此擋住啟動
+
+
+_fix_curl_ca_bundle()
 
 BACKEND_ROOT = Path(__file__).resolve().parent.parent
 DATA_CACHE_DIR = BACKEND_ROOT / "data_cache"
@@ -38,8 +69,10 @@ SPLIT_VAL_END = "2023-12-31"
 HISTORY_YEARS = 10
 
 # API 載入的正式模型名稱（artifacts/<名稱>/），訓練比較後由 compare.py 結果決定
-# 2026-07-10 比較：rf 測試 Macro AUC 0.6496 > xgb 0.6303（見 docs/model_comparison.md）
-PRODUCTION_MODEL = "rf"
+# 2026-07-11 五模型比較（以驗證集 Macro AUC 選型，避免用測試集挑模型的樂觀偏差）：
+#   gru(調參後) 0.6698 > lstm 0.6674 > tcn 0.6653 > rf 0.6583 > xgb 0.6411
+#   測試集確認：gru 0.6553 穩定優於多數類基線與 rf 0.6496（見 docs/model_comparison.md）
+PRODUCTION_MODEL = "gru"
 
 # 風險等級以近 N 日報酬的年化波動率計算
 RISK_WINDOW_DAYS = 60

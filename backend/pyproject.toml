@@ -15,6 +15,10 @@ dependencies = [
     "slowapi>=0.1.9",
     # Windows 的 zoneinfo 不含 IANA 時區資料庫，需靠此套件補上
     "tzdata>=2024.1",
+    # 深度模型（lstm/gru/tcn）。NVIDIA GPU 訓練請先以 cu128 index 安裝：
+    #   pip install torch --index-url https://download.pytorch.org/whl/cu128
+    # 再 pip install -e . 時已滿足版本需求，不會被 PyPI 的 CPU 版覆蓋
+    "torch>=2.7",
 ]
 
 [project.optional-dependencies]

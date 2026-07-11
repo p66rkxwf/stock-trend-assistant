@@ -24,7 +24,13 @@ class RandomForestModel(TrendModel):
             random_state=random_state,
         )
 
-    def fit(self, X: np.ndarray, y: np.ndarray) -> "RandomForestModel":
+    def fit(
+        self,
+        X: np.ndarray,
+        y: np.ndarray,
+        X_val: np.ndarray | None = None,
+        y_val: np.ndarray | None = None,
+    ) -> "RandomForestModel":
         self._clf.fit(X, y)
         return self
 
@@ -52,7 +58,13 @@ class XGBoostModel(TrendModel):
             random_state=random_state,
         )
 
-    def fit(self, X: np.ndarray, y: np.ndarray) -> "XGBoostModel":
+    def fit(
+        self,
+        X: np.ndarray,
+        y: np.ndarray,
+        X_val: np.ndarray | None = None,
+        y_val: np.ndarray | None = None,
+    ) -> "XGBoostModel":
         # XGBoost 無 class_weight 參數，改以逐樣本權重達成 balanced 效果
         counts = np.bincount(y.astype(int), minlength=3).astype(np.float64)
         weights = np.where(counts > 0, counts.sum() / (np.count_nonzero(counts) * counts), 0.0)

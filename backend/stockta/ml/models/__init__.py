@@ -1,1 +1,1 @@
-# Phase 3–4（C–D）：baselines / lstm / gru / tcn 將實作於此
+# 模型實作：baselines(rf/xgb)、lstm、gru、tcn(深度模型 import torch,由 train.py 延遲載入)

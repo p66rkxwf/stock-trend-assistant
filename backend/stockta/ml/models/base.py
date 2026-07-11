@@ -22,7 +22,14 @@ class TrendModel(abc.ABC):
     name: str = "base"
 
     @abc.abstractmethod
-    def fit(self, X: np.ndarray, y: np.ndarray) -> "TrendModel":
+    def fit(
+        self,
+        X: np.ndarray,
+        y: np.ndarray,
+        X_val: np.ndarray | None = None,
+        y_val: np.ndarray | None = None,
+    ) -> "TrendModel":
+        """X_val/y_val 供需要 early stopping 的模型（深度模型）使用，基線模型忽略。"""
         raise NotImplementedError
 
     @abc.abstractmethod
