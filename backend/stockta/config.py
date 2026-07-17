@@ -62,24 +62,29 @@ LABEL_DOWN_THRESHOLD = -0.02
 LABEL_CLASSES = ["跌", "觀望", "漲"]
 
 # 時間序列切分（絕不隨機打亂）：訓練 ≤ TRAIN_END、驗證 ≤ VAL_END、其後為測試
-SPLIT_TRAIN_END = "2022-12-31"
-SPLIT_VAL_END = "2023-12-31"
+# 2026-07-17 walk-forward 重訓：原切分（train≤2022、val=2023）的模型到 2026 年
+# 命中率明顯下滑（市場漂移），故將切分前移兩年重訓全部模型；舊 artifact 備份於
+# backend/artifacts_backup_2022split/
+SPLIT_TRAIN_END = "2024-12-31"
+SPLIT_VAL_END = "2025-12-31"
 
 # 訓練資料回溯年數
 HISTORY_YEARS = 10
 
 # API 載入的正式模型名稱（artifacts/<名稱>/），訓練比較後由 compare.py 結果決定
-# 2026-07-11 五模型比較（以驗證集 Macro AUC 選型，避免用測試集挑模型的樂觀偏差）：
-#   gru(調參後) 0.6698 > lstm 0.6674 > tcn 0.6653 > rf 0.6583 > xgb 0.6411
-#   測試集確認：gru 0.6553 穩定優於多數類基線與 rf 0.6496（見 docs/model_comparison.md）
-PRODUCTION_MODEL = "gru"
+# 2026-07-11 首輪比較（train≤2022/val=2023）以驗證 Macro AUC 選 gru（0.6698）。
+# 2026-07-17 walk-forward 重訓（train≤2024/val=2025）：lstm 0.6604 ≈ gru 0.6603，
+#   以驗證期校準後命中率決勝（lstm 52.6% > gru 52.5%）改選 lstm；
+#   測試期（2026）確認：校準後 45.5%，優於舊 gru 同期 43.5% 與多數類基線 37.7%
+#   （見 docs/model_comparison.md、docs/backtest_report.md）
+PRODUCTION_MODEL = "lstm"
 
-# 方向訊號信心門檻：機率 argmax 過度偏「跌」（測試期 59% 的呼叫喊跌、精度僅 28%），
+# 方向訊號信心門檻：機率 argmax 過度偏「跌」（精度僅比基率高幾個百分點），
 # 故信心低於門檻的方向訊號一律降級為「觀望」——少喊、喊得準。
-# 門檻僅以驗證期（2023）整體命中率網格搜尋選出，測試期（2024-01 起）驗證：
-# 整體命中率 42.4% → 49.7%、喊漲精度 43.8% → 51.1%（見 docs/backtest_report.md）。
+# 門檻僅以驗證期（2025）整體命中率網格搜尋選出，測試期（2026）驗證：
+# 整體命中率 39.8% → 45.5%、喊漲精度 45.0% → 48.4%（見 docs/backtest_report.md）。
 # 重新訓練或更換模型後，需執行 python -m stockta.ml.calibrate 重新校準本設定。
-SIGNAL_CONFIDENCE_THRESHOLDS: dict[str, float] = {"跌": 0.46, "漲": 0.44}
+SIGNAL_CONFIDENCE_THRESHOLDS: dict[str, float] = {"跌": 0.43, "漲": 0.42}
 
 # 風險等級以近 N 日報酬的年化波動率計算
 RISK_WINDOW_DAYS = 60

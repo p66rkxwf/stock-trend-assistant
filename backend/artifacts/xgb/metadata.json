@@ -1,6 +1,6 @@
 {
   "model_name": "xgb",
-  "trained_at": "2026-07-10T14:04:53+00:00",
+  "trained_at": "2026-07-17T04:48:25+00:00",
   "feature_columns": [
     "ret_1d",
     "ret_5d",
@@ -30,72 +30,72 @@
   "label_up_threshold": 0.02,
   "label_down_threshold": -0.02,
   "auto_adjust": true,
-  "git_commit": "f448761",
+  "git_commit": "ee04875",
   "metrics": {
     "val": {
-      "n_samples": 5733,
-      "accuracy": 0.5208442351299494,
-      "macro_f1": 0.4226169371076443,
-      "macro_auc": 0.6411253695929314,
+      "n_samples": 5783,
+      "accuracy": 0.45651046169808057,
+      "macro_f1": 0.4235639633764965,
+      "macro_auc": 0.628933826181341,
       "majority_class": "觀望",
-      "majority_baseline_accuracy": 0.5670678527821384,
+      "majority_baseline_accuracy": 0.4973197302438181,
       "confusion_matrix": [
         [
-          278,
-          364,
-          281
+          432,
+          347,
+          494
         ],
         [
-          516,
-          2271,
-          464
+          647,
+          1565,
+          664
         ],
         [
-          465,
-          657,
-          437
+          550,
+          441,
+          643
         ]
       ],
       "label_distribution": {
-        "跌": 923,
-        "觀望": 3251,
-        "漲": 1559
+        "跌": 1273,
+        "觀望": 2876,
+        "漲": 1634
       }
     },
     "test": {
-      "n_samples": 14746,
-      "accuracy": 0.4431710294317103,
-      "macro_f1": 0.41973158518612835,
-      "macro_auc": 0.6302744587910499,
+      "n_samples": 2993,
+      "accuracy": 0.42866688940862013,
+      "macro_f1": 0.42826427640924986,
+      "macro_auc": 0.6372567870065716,
       "majority_class": "觀望",
-      "majority_baseline_accuracy": 0.47361996473619966,
+      "majority_baseline_accuracy": 0.38656866020715,
       "confusion_matrix": [
         [
-          1202,
-          845,
-          1332
+          333,
+          95,
+          295
         ],
         [
-          1596,
-          3632,
-          1756
+          359,
+          456,
+          342
         ],
         [
-          1606,
-          1076,
-          1701
+          471,
+          148,
+          494
         ]
       ],
       "label_distribution": {
-        "跌": 3379,
-        "觀望": 6984,
-        "漲": 4383
+        "跌": 723,
+        "觀望": 1157,
+        "漲": 1113
       }
     },
-    "train_seconds": 481.7
+    "train_seconds": 62.7
   },
   "stride": 2,
-  "n_train": 35636,
+  "n_train": 47304,
   "tickers": [
     "1101.TW",
     "1216.TW",
