@@ -74,6 +74,13 @@ HISTORY_YEARS = 10
 #   測試集確認：gru 0.6553 穩定優於多數類基線與 rf 0.6496（見 docs/model_comparison.md）
 PRODUCTION_MODEL = "gru"
 
+# 方向訊號信心門檻：機率 argmax 過度偏「跌」（測試期 59% 的呼叫喊跌、精度僅 28%），
+# 故信心低於門檻的方向訊號一律降級為「觀望」——少喊、喊得準。
+# 門檻僅以驗證期（2023）整體命中率網格搜尋選出，測試期（2024-01 起）驗證：
+# 整體命中率 42.4% → 49.7%、喊漲精度 43.8% → 51.1%（見 docs/backtest_report.md）。
+# 重新訓練或更換模型後，需執行 python -m stockta.ml.calibrate 重新校準本設定。
+SIGNAL_CONFIDENCE_THRESHOLDS: dict[str, float] = {"跌": 0.46, "漲": 0.44}
+
 # 風險等級以近 N 日報酬的年化波動率計算
 RISK_WINDOW_DAYS = 60
 TRADING_DAYS_PER_YEAR = 252
