@@ -35,6 +35,63 @@ class PredictionResponse(BaseModel):
     risk: RiskLevel
     model_version: str
     is_mock: bool = Field(default=False, description="Phase 6 模型整合前為 True，前端可據此顯示提示")
+    proba: dict[str, float] | None = Field(
+        default=None, description="三類機率（跌/觀望/漲）；mock 模式為 None。additive 欄位，不破壞既有契約"
+    )
+
+
+class IndicatorsResponse(BaseModel):
+    """當前技術指標快照（與模型特徵同一條 build_features 路徑，數值一致）。"""
+
+    ticker: str
+    as_of: date
+    rsi14: float = Field(description="0–1 縮放（0.5 中性）")
+    kd_k: float
+    kd_d: float
+    macd_hist: float
+    bb_pctb: float
+    bb_width: float
+    vol_ratio: float = Field(description="量能相對 20 日均量的偏離")
+    ma_bias_5: float = Field(description="收盤價相對 5 日均線乖離")
+    ma_bias_20: float
+    ma_bias_60: float
+
+
+class MarketResponse(BaseModel):
+    """大盤情境快照（^TWII + 股票池寬度）。"""
+
+    as_of: date
+    ret_1d: float
+    ret_5d: float
+    ma20_bias: float = Field(description="加權指數相對其 20 日均線乖離")
+    vol20: float = Field(description="日報酬 20 日標準差")
+    breadth_up: float = Field(description="股票池當日上漲家數比 0–1")
+    breadth_ma5: float
+
+
+class PastPrediction(BaseModel):
+    base_date: date
+    signal: Signal
+    confidence: float
+    model_version: str
+    actual: Signal | None = Field(default=None, description="未到期（不足 5 個交易日）為 None")
+    actual_return: float | None = None
+    hit: bool | None = None
+
+
+class PredictionHistoryResponse(BaseModel):
+    ticker: str
+    records: list[PastPrediction]
+
+
+class TrackRecordResponse(BaseModel):
+    """全站線上實證摘要：predictions.db 已到期預測的即時命中統計。"""
+
+    total: int
+    matured: int
+    hits: int
+    hit_rate: float | None = Field(default=None, description="matured=0 時為 None")
+    since: date | None = None
 
 
 class StockInfo(BaseModel):
