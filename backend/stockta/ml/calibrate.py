@@ -20,6 +20,7 @@ from stockta.config import (
     AUTO_ADJUST,
     DATA_CACHE_DIR,
     LABEL_CLASSES,
+    MARKET_INDEX_TICKER,
     PRODUCTION_MODEL,
     SPLIT_TRAIN_END,
     SPLIT_VAL_END,
@@ -28,6 +29,7 @@ from stockta.config import (
 from stockta.data.cache import ParquetCache
 from stockta.data.calendar import last_completed_trading_day
 from stockta.data.provider import DataProviderError, YFinanceProvider
+from stockta.features.market import build_market_context
 from stockta.inference.predictor import Predictor
 from stockta.ml.backtest import collect_probas
 
@@ -43,14 +45,18 @@ def main() -> int:
     end = last_completed_trading_day()
     print(f"模型：{predictor.version}；驗證期 {SPLIT_TRAIN_END} ~ {SPLIT_VAL_END}")
 
-    probas, ys = [], []
+    pool_ohlcv = {}
     for ticker in STOCK_POOL:
         try:
-            df = provider.get_ohlcv(ticker, fetch_start, end)
+            pool_ohlcv[ticker] = provider.get_ohlcv(ticker, fetch_start, end)
         except DataProviderError as exc:
             print(f"[略過] {ticker}: {exc}")
-            continue
-        p, a, d = collect_probas(predictor, df, train_end)
+    market = provider.get_ohlcv(MARKET_INDEX_TICKER, fetch_start, end)
+    context = build_market_context(market, pool_ohlcv)
+
+    probas, ys = [], []
+    for df in pool_ohlcv.values():
+        p, a, d = collect_probas(predictor, df, context, train_end)
         m = d <= val_end
         if m.any():
             probas.append(p[m])

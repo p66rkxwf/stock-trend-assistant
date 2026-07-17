@@ -49,6 +49,11 @@ MARKET_CLOSE_MINUTE = 30
 # yfinance 調整價設定：訓練與推論必須一致，否則除權息日前後特徵與標籤全部失真
 AUTO_ADJUST = True
 
+# 市場情境特徵的大盤指數（台股加權指數）；快取檔名映射見 data/cache.py
+MARKET_INDEX_TICKER = "^TWII"
+# 市場寬度（上漲家數比）當日有資料的成分股少於此數即視為不可信（NaN）
+BREADTH_MIN_TICKERS = 30
+
 WINDOW_LENGTH_DAYS = 60
 # EMA 類指標（RSI/MACD/KD）的值受序列起點影響，需足夠長的暖機期收斂後
 # 推論（短序列）與訓練（全序列）的特徵才會一致；120 個交易日可讓 EMA(26)

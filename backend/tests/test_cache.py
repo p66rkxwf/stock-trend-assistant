@@ -14,6 +14,25 @@ def test_validate_ticker_rejects_bad_input(bad_ticker):
         validate_ticker(bad_ticker)
 
 
+def test_validate_ticker_whitelists_market_index():
+    assert validate_ticker("^TWII") == "^TWII"
+
+
+@pytest.mark.parametrize("bad_ticker", ["^GSPC", "^TWII/../x", "^twii"])
+def test_validate_ticker_rejects_other_carets(bad_ticker):
+    # 白名單只放行精確的 ^TWII，其他含 ^ 的輸入一律拒絕（路徑穿越防線）
+    with pytest.raises(InvalidTickerError):
+        validate_ticker(bad_ticker)
+
+
+def test_market_index_cache_filename_strips_caret(tmp_path):
+    cache = ParquetCache(tmp_path)
+    df = pd.DataFrame({"close": [1.0]}, index=pd.date_range("2024-01-01", periods=1))
+    cache.write("^TWII", df)
+    assert (tmp_path / "TWII.parquet").exists()
+    assert cache.read("^TWII") is not None
+
+
 def test_cache_roundtrip(tmp_path):
     cache = ParquetCache(tmp_path)
     df = pd.DataFrame({"close": [1.0, 2.0]}, index=pd.date_range("2024-01-01", periods=2))

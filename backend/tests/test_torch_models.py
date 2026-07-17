@@ -40,14 +40,14 @@ def test_fit_predict_shapes_and_probability(name):
     assert set(np.unique(pred)) <= {0, 1, 2}
 
 
-def test_flattened_layout_roundtrip(random_walk_ohlcv):
+def test_flattened_layout_roundtrip(random_walk_ohlcv, market_context):
     """dataset.py 的攤平佈局必須能 reshape 回 (n, window, n_features) 且逐值等於原特徵。
 
     深度模型內部依賴此還原；若 dataset.py 改動攤平方式，此測試會先失敗。
     """
     from numpy.lib.stride_tricks import sliding_window_view
 
-    feats = build_features(random_walk_ohlcv)
+    feats = build_features(random_walk_ohlcv, market_context)
     arr = feats.to_numpy(dtype=np.float32)
     windows = sliding_window_view(arr, WINDOW_LENGTH_DAYS, axis=0)
     flat = windows.transpose(0, 2, 1).reshape(windows.shape[0], -1)  # dataset.py 的攤平

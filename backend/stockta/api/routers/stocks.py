@@ -76,11 +76,12 @@ def get_prediction(
 
     try:
         df = provider.get_ohlcv(ticker, start, end)
+        context = request.app.state.market_context.get(end)
     except DataProviderError as exc:
         raise DataSourceUnavailableError(str(exc)) from exc
 
     try:
-        pred = predictor.predict(df)
+        pred = predictor.predict(df, context)
     except InsufficientDataError as exc:
         raise DataInsufficientError(str(exc)) from exc
 

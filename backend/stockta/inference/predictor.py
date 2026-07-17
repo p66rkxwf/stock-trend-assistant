@@ -65,11 +65,12 @@ class Predictor:
         suffix = "+cal" if SIGNAL_CONFIDENCE_THRESHOLDS else ""
         return f"{self.metadata['model_name']}-{self.metadata['trained_at'][:10]}{suffix}"
 
-    def predict(self, ohlcv: pd.DataFrame) -> Prediction:
+    def predict(self, ohlcv: pd.DataFrame, context: pd.DataFrame) -> Prediction:
+        """context 為市場情境（build_market_context 產物），與訓練共用同一條特徵路徑。"""
         # 延遲 import：讓 API 在無 sklearn 環境仍可以 mock 模式啟動
         from stockta.features.pipeline import build_features
 
-        feats = build_features(ohlcv)
+        feats = build_features(ohlcv, context)
         if len(feats) < WINDOW_LENGTH_DAYS:
             raise InsufficientDataError(
                 f"暖機後僅 {len(feats)} 列特徵，不足 {WINDOW_LENGTH_DAYS} 日視窗；"
