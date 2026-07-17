@@ -1,6 +1,6 @@
 {
   "model_name": "gru",
-  "trained_at": "2026-07-17T05:04:25+00:00",
+  "trained_at": "2026-07-17T15:46:00+00:00",
   "feature_columns": [
     "ret_1d",
     "ret_5d",
@@ -18,7 +18,15 @@
     "kd_d",
     "vol_ratio",
     "vol_chg",
-    "hl_range"
+    "hl_range",
+    "mkt_ret_1d",
+    "mkt_ret_5d",
+    "mkt_ma20",
+    "mkt_vol20",
+    "breadth_up",
+    "breadth_ma5",
+    "rel_ret_1d",
+    "rel_ret_5d"
   ],
   "window_length_days": 60,
   "label_classes": [
@@ -30,72 +38,72 @@
   "label_up_threshold": 0.02,
   "label_down_threshold": -0.02,
   "auto_adjust": true,
-  "git_commit": "ee04875",
+  "git_commit": "8d84e95",
   "metrics": {
     "val": {
-      "n_samples": 5783,
-      "accuracy": 0.44942071589140586,
-      "macro_f1": 0.43225471569853563,
-      "macro_auc": 0.660317656117492,
+      "n_samples": 5727,
+      "accuracy": 0.47354635935044526,
+      "macro_f1": 0.4510574380476237,
+      "macro_auc": 0.6709225128062778,
       "majority_class": "觀望",
-      "majority_baseline_accuracy": 0.4973197302438181,
+      "majority_baseline_accuracy": 0.4793085385018334,
       "confusion_matrix": [
         [
-          733,
-          227,
-          313
+          620,
+          331,
+          368
         ],
         [
-          1063,
-          1353,
-          460
+          712,
+          1491,
+          542
         ],
         [
-          801,
-          320,
-          513
+          634,
+          428,
+          601
         ]
       ],
       "label_distribution": {
-        "跌": 1273,
-        "觀望": 2876,
-        "漲": 1634
+        "跌": 1319,
+        "觀望": 2745,
+        "漲": 1663
       }
     },
     "test": {
-      "n_samples": 2993,
-      "accuracy": 0.3919144670898764,
-      "macro_f1": 0.3921279582074039,
-      "macro_auc": 0.6547235652188966,
-      "majority_class": "觀望",
-      "majority_baseline_accuracy": 0.38656866020715,
+      "n_samples": 3035,
+      "accuracy": 0.4813838550247117,
+      "macro_f1": 0.4680733063657588,
+      "macro_auc": 0.6472585055160007,
+      "majority_class": "漲",
+      "majority_baseline_accuracy": 0.37957166392092256,
       "confusion_matrix": [
         [
-          496,
-          61,
-          166
+          270,
+          191,
+          308
         ],
         [
-          556,
-          385,
-          216
+          155,
+          547,
+          412
         ],
         [
-          721,
-          100,
-          292
+          271,
+          237,
+          644
         ]
       ],
       "label_distribution": {
-        "跌": 723,
-        "觀望": 1157,
-        "漲": 1113
+        "跌": 769,
+        "觀望": 1114,
+        "漲": 1152
       }
     },
-    "train_seconds": 3.9
+    "train_seconds": 2.9
   },
   "stride": 2,
-  "n_train": 47304,
+  "n_train": 47301,
   "tickers": [
     "1101.TW",
     "1216.TW",
@@ -182,216 +190,216 @@
       "num_layers": 1,
       "lr": 0.001,
       "dropout": 0.2,
-      "val_macro_auc": 0.6599060996553621,
-      "epochs": 9,
-      "seconds": 6.0
+      "val_macro_auc": 0.6692830170382891,
+      "epochs": 7,
+      "seconds": 4.9
     },
     {
       "hidden_size": 32,
       "num_layers": 1,
       "lr": 0.001,
       "dropout": 0.4,
-      "val_macro_auc": 0.660317656117492,
-      "epochs": 9,
-      "seconds": 3.9
+      "val_macro_auc": 0.6709225128062778,
+      "epochs": 7,
+      "seconds": 2.9
     },
     {
       "hidden_size": 32,
       "num_layers": 1,
       "lr": 0.0003,
       "dropout": 0.2,
-      "val_macro_auc": 0.659065353960096,
-      "epochs": 16,
-      "seconds": 6.8
-    },
-    {
-      "hidden_size": 32,
-      "num_layers": 1,
-      "lr": 0.0003,
-      "dropout": 0.4,
-      "val_macro_auc": 0.659452884666064,
-      "epochs": 19,
-      "seconds": 8.3
-    },
-    {
-      "hidden_size": 32,
-      "num_layers": 2,
-      "lr": 0.001,
-      "dropout": 0.2,
-      "val_macro_auc": 0.6552749788816863,
-      "epochs": 9,
-      "seconds": 4.5
-    },
-    {
-      "hidden_size": 32,
-      "num_layers": 2,
-      "lr": 0.001,
-      "dropout": 0.4,
-      "val_macro_auc": 0.6563101705947002,
-      "epochs": 9,
-      "seconds": 4.3
-    },
-    {
-      "hidden_size": 32,
-      "num_layers": 2,
-      "lr": 0.0003,
-      "dropout": 0.2,
-      "val_macro_auc": 0.655852402858435,
-      "epochs": 13,
-      "seconds": 6.2
-    },
-    {
-      "hidden_size": 32,
-      "num_layers": 2,
-      "lr": 0.0003,
-      "dropout": 0.4,
-      "val_macro_auc": 0.6562962974591546,
-      "epochs": 16,
-      "seconds": 7.5
-    },
-    {
-      "hidden_size": 64,
-      "num_layers": 1,
-      "lr": 0.001,
-      "dropout": 0.2,
-      "val_macro_auc": 0.6555071976486849,
-      "epochs": 9,
-      "seconds": 4.1
-    },
-    {
-      "hidden_size": 64,
-      "num_layers": 1,
-      "lr": 0.001,
-      "dropout": 0.4,
-      "val_macro_auc": 0.6572727367164689,
+      "val_macro_auc": 0.6679962445458124,
       "epochs": 12,
-      "seconds": 5.1
+      "seconds": 5.0
     },
     {
-      "hidden_size": 64,
-      "num_layers": 1,
-      "lr": 0.0003,
-      "dropout": 0.2,
-      "val_macro_auc": 0.6572569496745853,
-      "epochs": 13,
-      "seconds": 5.7
-    },
-    {
-      "hidden_size": 64,
+      "hidden_size": 32,
       "num_layers": 1,
       "lr": 0.0003,
       "dropout": 0.4,
-      "val_macro_auc": 0.6579871195876571,
-      "epochs": 13,
+      "val_macro_auc": 0.6707970647746405,
+      "epochs": 11,
+      "seconds": 4.9
+    },
+    {
+      "hidden_size": 32,
+      "num_layers": 2,
+      "lr": 0.001,
+      "dropout": 0.2,
+      "val_macro_auc": 0.6665274231430492,
+      "epochs": 6,
+      "seconds": 2.9
+    },
+    {
+      "hidden_size": 32,
+      "num_layers": 2,
+      "lr": 0.001,
+      "dropout": 0.4,
+      "val_macro_auc": 0.6646991427651966,
+      "epochs": 9,
+      "seconds": 4.2
+    },
+    {
+      "hidden_size": 32,
+      "num_layers": 2,
+      "lr": 0.0003,
+      "dropout": 0.2,
+      "val_macro_auc": 0.6681566140999239,
+      "epochs": 9,
+      "seconds": 4.2
+    },
+    {
+      "hidden_size": 32,
+      "num_layers": 2,
+      "lr": 0.0003,
+      "dropout": 0.4,
+      "val_macro_auc": 0.6671794078278274,
+      "epochs": 12,
       "seconds": 5.5
     },
     {
       "hidden_size": 64,
+      "num_layers": 1,
+      "lr": 0.001,
+      "dropout": 0.2,
+      "val_macro_auc": 0.6657277668166314,
+      "epochs": 6,
+      "seconds": 2.7
+    },
+    {
+      "hidden_size": 64,
+      "num_layers": 1,
+      "lr": 0.001,
+      "dropout": 0.4,
+      "val_macro_auc": 0.6676608329240287,
+      "epochs": 6,
+      "seconds": 2.7
+    },
+    {
+      "hidden_size": 64,
+      "num_layers": 1,
+      "lr": 0.0003,
+      "dropout": 0.2,
+      "val_macro_auc": 0.6649080273649214,
+      "epochs": 9,
+      "seconds": 4.3
+    },
+    {
+      "hidden_size": 64,
+      "num_layers": 1,
+      "lr": 0.0003,
+      "dropout": 0.4,
+      "val_macro_auc": 0.6666899635162414,
+      "epochs": 9,
+      "seconds": 3.9
+    },
+    {
+      "hidden_size": 64,
       "num_layers": 2,
       "lr": 0.001,
       "dropout": 0.2,
-      "val_macro_auc": 0.6556506651517869,
-      "epochs": 9,
-      "seconds": 4.6
+      "val_macro_auc": 0.660661491760711,
+      "epochs": 6,
+      "seconds": 3.1
     },
     {
       "hidden_size": 64,
       "num_layers": 2,
       "lr": 0.001,
       "dropout": 0.4,
-      "val_macro_auc": 0.6564111064338269,
-      "epochs": 12,
-      "seconds": 5.9
+      "val_macro_auc": 0.6626153919874055,
+      "epochs": 6,
+      "seconds": 2.9
     },
     {
       "hidden_size": 64,
       "num_layers": 2,
       "lr": 0.0003,
       "dropout": 0.2,
-      "val_macro_auc": 0.6561253771612477,
-      "epochs": 16,
-      "seconds": 8.0
+      "val_macro_auc": 0.6602686023632418,
+      "epochs": 9,
+      "seconds": 4.4
     },
     {
       "hidden_size": 64,
       "num_layers": 2,
       "lr": 0.0003,
       "dropout": 0.4,
-      "val_macro_auc": 0.6577263685125573,
-      "epochs": 16,
-      "seconds": 8.1
+      "val_macro_auc": 0.6621231690955285,
+      "epochs": 9,
+      "seconds": 4.4
     },
     {
       "hidden_size": 128,
       "num_layers": 1,
       "lr": 0.001,
       "dropout": 0.2,
-      "val_macro_auc": 0.6538414048249749,
-      "epochs": 7,
-      "seconds": 3.4
+      "val_macro_auc": 0.6620753452974227,
+      "epochs": 6,
+      "seconds": 2.8
     },
     {
       "hidden_size": 128,
       "num_layers": 1,
       "lr": 0.001,
       "dropout": 0.4,
-      "val_macro_auc": 0.6535632069658803,
-      "epochs": 9,
-      "seconds": 4.2
+      "val_macro_auc": 0.6632799391784961,
+      "epochs": 6,
+      "seconds": 2.9
     },
     {
       "hidden_size": 128,
       "num_layers": 1,
       "lr": 0.0003,
       "dropout": 0.2,
-      "val_macro_auc": 0.6582364087423488,
+      "val_macro_auc": 0.6652816881945367,
       "epochs": 9,
-      "seconds": 4.2
+      "seconds": 4.1
     },
     {
       "hidden_size": 128,
       "num_layers": 1,
       "lr": 0.0003,
       "dropout": 0.4,
-      "val_macro_auc": 0.6592222500068158,
+      "val_macro_auc": 0.6663109444472614,
       "epochs": 9,
-      "seconds": 4.2
+      "seconds": 4.1
     },
     {
       "hidden_size": 128,
       "num_layers": 2,
       "lr": 0.001,
       "dropout": 0.2,
-      "val_macro_auc": 0.6538109077718225,
-      "epochs": 7,
-      "seconds": 4.2
+      "val_macro_auc": 0.6639501635351693,
+      "epochs": 6,
+      "seconds": 3.7
     },
     {
       "hidden_size": 128,
       "num_layers": 2,
       "lr": 0.001,
       "dropout": 0.4,
-      "val_macro_auc": 0.6538269255678054,
-      "epochs": 9,
-      "seconds": 5.3
+      "val_macro_auc": 0.6635822760271227,
+      "epochs": 6,
+      "seconds": 3.6
     },
     {
       "hidden_size": 128,
       "num_layers": 2,
       "lr": 0.0003,
       "dropout": 0.2,
-      "val_macro_auc": 0.6543983320123505,
-      "epochs": 13,
-      "seconds": 7.6
+      "val_macro_auc": 0.6628357285501644,
+      "epochs": 6,
+      "seconds": 3.5
     },
     {
       "hidden_size": 128,
       "num_layers": 2,
       "lr": 0.0003,
       "dropout": 0.4,
-      "val_macro_auc": 0.656865179841046,
-      "epochs": 16,
-      "seconds": 9.4
+      "val_macro_auc": 0.6600214718616959,
+      "epochs": 9,
+      "seconds": 5.2
     }
   ]
 }

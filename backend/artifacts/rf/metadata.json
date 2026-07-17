@@ -1,6 +1,6 @@
 {
   "model_name": "rf",
-  "trained_at": "2026-07-17T04:47:20+00:00",
+  "trained_at": "2026-07-17T15:41:12+00:00",
   "feature_columns": [
     "ret_1d",
     "ret_5d",
@@ -18,7 +18,15 @@
     "kd_d",
     "vol_ratio",
     "vol_chg",
-    "hl_range"
+    "hl_range",
+    "mkt_ret_1d",
+    "mkt_ret_5d",
+    "mkt_ma20",
+    "mkt_vol20",
+    "breadth_up",
+    "breadth_ma5",
+    "rel_ret_1d",
+    "rel_ret_5d"
   ],
   "window_length_days": 60,
   "label_classes": [
@@ -30,72 +38,72 @@
   "label_up_threshold": 0.02,
   "label_down_threshold": -0.02,
   "auto_adjust": true,
-  "git_commit": "ee04875",
+  "git_commit": "e394dd2",
   "metrics": {
     "val": {
-      "n_samples": 5783,
-      "accuracy": 0.4680961438699637,
-      "macro_f1": 0.43694878883051474,
-      "macro_auc": 0.6501998459636011,
+      "n_samples": 5727,
+      "accuracy": 0.4674349572201851,
+      "macro_f1": 0.43370081194309146,
+      "macro_auc": 0.6536789785358009,
       "majority_class": "觀望",
-      "majority_baseline_accuracy": 0.4973197302438181,
+      "majority_baseline_accuracy": 0.4793085385018334,
       "confusion_matrix": [
         [
-          459,
-          318,
-          496
+          380,
+          341,
+          598
         ],
         [
-          593,
-          1574,
-          709
+          445,
+          1533,
+          767
         ],
         [
-          521,
-          439,
-          674
+          474,
+          425,
+          764
         ]
       ],
       "label_distribution": {
-        "跌": 1273,
-        "觀望": 2876,
-        "漲": 1634
+        "跌": 1319,
+        "觀望": 2745,
+        "漲": 1663
       }
     },
     "test": {
-      "n_samples": 2993,
-      "accuracy": 0.4246575342465753,
-      "macro_f1": 0.4236115380637913,
-      "macro_auc": 0.6528953062708757,
-      "majority_class": "觀望",
-      "majority_baseline_accuracy": 0.38656866020715,
+      "n_samples": 3035,
+      "accuracy": 0.46622734761120266,
+      "macro_f1": 0.4315307856191703,
+      "macro_auc": 0.6426794611923322,
+      "majority_class": "漲",
+      "majority_baseline_accuracy": 0.37957166392092256,
       "confusion_matrix": [
         [
-          320,
-          91,
-          312
+          168,
+          130,
+          471
         ],
         [
-          349,
-          468,
-          340
+          124,
+          463,
+          527
         ],
         [
-          450,
-          180,
-          483
+          197,
+          171,
+          784
         ]
       ],
       "label_distribution": {
-        "跌": 723,
-        "觀望": 1157,
-        "漲": 1113
+        "跌": 769,
+        "觀望": 1114,
+        "漲": 1152
       }
     },
-    "train_seconds": 7.9
+    "train_seconds": 9.1
   },
   "stride": 2,
-  "n_train": 47304,
+  "n_train": 47301,
   "tickers": [
     "1101.TW",
     "1216.TW",

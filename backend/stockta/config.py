@@ -79,17 +79,18 @@ HISTORY_YEARS = 10
 # API 載入的正式模型名稱（artifacts/<名稱>/），訓練比較後由 compare.py 結果決定
 # 2026-07-11 首輪比較（train≤2022/val=2023）以驗證 Macro AUC 選 gru（0.6698）。
 # 2026-07-17 walk-forward 重訓（train≤2024/val=2025）：lstm 0.6604 ≈ gru 0.6603，
-#   以驗證期校準後命中率決勝（lstm 52.6% > gru 52.5%）改選 lstm；
-#   測試期（2026）確認：校準後 45.5%，優於舊 gru 同期 43.5% 與多數類基線 37.7%
-#   （見 docs/model_comparison.md、docs/backtest_report.md）
-PRODUCTION_MODEL = "lstm"
+#   以驗證期校準後命中率決勝改選 lstm（測試期 45.5% > 舊 gru 43.5%）。
+# 2026-07-18 市場情境特徵（17→25 欄）重訓：以驗證 Macro AUC 選 gru
+#   （0.6709 > lstm 0.6673；亦優於 17 欄基準 0.6604），驗證期原始命中率 47.0%
+#   （17 欄基準 45.6%）；校準後 52.58% 與基準 52.6% 在 ±0.46% 噪音內持平——
+#   新特徵使 argmax 天生平衡、不再依賴門檻救援（完整裁決見 docs/experiment_log.md）
+PRODUCTION_MODEL = "gru"
 
-# 方向訊號信心門檻：機率 argmax 過度偏「跌」（精度僅比基率高幾個百分點），
-# 故信心低於門檻的方向訊號一律降級為「觀望」——少喊、喊得準。
-# 門檻僅以驗證期（2025）整體命中率網格搜尋選出，測試期（2026）驗證：
-# 整體命中率 39.8% → 45.5%、喊漲精度 45.0% → 48.4%（見 docs/backtest_report.md）。
+# 方向訊號信心門檻：信心低於門檻的方向訊號一律降級為「觀望」——少喊、喊得準。
+# 門檻僅以驗證期（2025）整體命中率網格搜尋選出（2026-07-18 對 25 欄 gru 校準）。
+# 加入市場情境特徵後 argmax 已大致平衡，門檻的角色從「救援」變成「保守化微調」。
 # 重新訓練或更換模型後，需執行 python -m stockta.ml.calibrate 重新校準本設定。
-SIGNAL_CONFIDENCE_THRESHOLDS: dict[str, float] = {"跌": 0.43, "漲": 0.42}
+SIGNAL_CONFIDENCE_THRESHOLDS: dict[str, float] = {"跌": 0.42, "漲": 0.39}
 
 # 風險等級以近 N 日報酬的年化波動率計算
 RISK_WINDOW_DAYS = 60
