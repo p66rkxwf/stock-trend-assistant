@@ -19,3 +19,6 @@ backend/predictions.db
 
 # 環境變數
 .env
+
+# 每日預測排程日誌
+logs/
