@@ -8,6 +8,39 @@ const SIGNAL_STYLES: Record<PredictionResponse["signal"], string> = {
   觀望: "text-gray-500 dark:text-gray-400",
 };
 
+const BAR_STYLES: Record<PredictionResponse["signal"], string> = {
+  漲: "bg-red-500",
+  跌: "bg-green-500",
+  觀望: "bg-gray-400",
+};
+
+const SIGNAL_ORDER: PredictionResponse["signal"][] = ["漲", "觀望", "跌"];
+
+/** 三類機率橫條：把模型的原始判斷攤開，觀望降級時數字才說得通 */
+function ProbaBars({ proba }: { proba: NonNullable<PredictionResponse["proba"]> }) {
+  return (
+    <div className="mt-4 space-y-1.5">
+      {SIGNAL_ORDER.map((s) => {
+        const pct = Math.round((proba[s] ?? 0) * 100);
+        return (
+          <div key={s} className="flex items-center gap-2 text-xs">
+            <span className={`w-8 shrink-0 font-medium ${SIGNAL_STYLES[s]}`}>{s}</span>
+            <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
+              <div
+                className={`h-full rounded-full ${BAR_STYLES[s]} transition-all`}
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+            <span className="w-9 shrink-0 text-right tabular-nums text-gray-500 dark:text-gray-400">
+              {pct}%
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function PredictionCard({
   prediction,
   testAuc,
@@ -41,6 +74,16 @@ export default function PredictionCard({
           style={{ width: `${pct}%` }}
         />
       </div>
+
+      {prediction.proba && <ProbaBars proba={prediction.proba} />}
+
+      {prediction.proba &&
+        prediction.signal === "觀望" &&
+        prediction.proba["觀望"] < Math.max(prediction.proba["漲"], prediction.proba["跌"]) && (
+          <p className="mt-3 rounded-md bg-gray-50 px-3 py-2 text-xs text-gray-600 dark:bg-gray-800/60 dark:text-gray-300">
+            模型的方向判斷信心未達門檻，依決策規則轉為「觀望」——寧可少喊，也不亂喊。
+          </p>
+        )}
 
       <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-gray-500 dark:text-gray-400">
         <dt>基準日</dt>

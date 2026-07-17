@@ -10,6 +10,8 @@ from pathlib import Path
 
 import pandas as pd
 
+from stockta.config import MARKET_INDEX_TICKER
+
 _TICKER_RE = re.compile(r"^\d{4,6}\.TW$")
 
 
@@ -18,6 +20,9 @@ class InvalidTickerError(ValueError):
 
 
 def validate_ticker(ticker: str) -> str:
+    # 大盤指數以「精確比對」白名單放行（不放寬 regex，維持路徑穿越防線）
+    if ticker == MARKET_INDEX_TICKER:
+        return ticker
     if not _TICKER_RE.match(ticker):
         raise InvalidTickerError(f"不合法的股票代號格式: {ticker!r}")
     return ticker
@@ -32,7 +37,8 @@ class ParquetCache:
 
     def _path(self, ticker: str) -> Path:
         validate_ticker(ticker)
-        return self._dir / f"{ticker}.parquet"
+        # ^TWII 的 ^ 不宜入檔名，映射為 TWII.parquet（與個股代號格式不重疊）
+        return self._dir / f"{ticker.lstrip('^')}.parquet"
 
     def read(self, ticker: str) -> pd.DataFrame | None:
         path = self._path(ticker)

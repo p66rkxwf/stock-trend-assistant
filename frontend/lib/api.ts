@@ -30,6 +30,55 @@ export interface PredictionResponse {
   risk: RiskLevel;
   model_version: string;
   is_mock: boolean;
+  proba: Record<Signal, number> | null;
+}
+
+export interface IndicatorsResponse {
+  ticker: string;
+  as_of: string;
+  rsi14: number;
+  kd_k: number;
+  kd_d: number;
+  macd_hist: number;
+  bb_pctb: number;
+  bb_width: number;
+  vol_ratio: number;
+  ma_bias_5: number;
+  ma_bias_20: number;
+  ma_bias_60: number;
+}
+
+export interface MarketResponse {
+  as_of: string;
+  ret_1d: number;
+  ret_5d: number;
+  ma20_bias: number;
+  vol20: number;
+  breadth_up: number;
+  breadth_ma5: number;
+}
+
+export interface PastPrediction {
+  base_date: string;
+  signal: Signal;
+  confidence: number;
+  model_version: string;
+  actual: Signal | null;
+  actual_return: number | null;
+  hit: boolean | null;
+}
+
+export interface PredictionHistoryResponse {
+  ticker: string;
+  records: PastPrediction[];
+}
+
+export interface TrackRecordResponse {
+  total: number;
+  matured: number;
+  hits: number;
+  hit_rate: number | null;
+  since: string | null;
 }
 
 export interface StockInfo {
@@ -76,4 +125,10 @@ export const api = {
   prediction: (ticker: string) =>
     request<PredictionResponse>(`/api/stocks/${encodeURIComponent(ticker)}/prediction`),
   modelInfo: () => request<ModelInfoResponse>("/api/model"),
+  indicators: (ticker: string) =>
+    request<IndicatorsResponse>(`/api/stocks/${encodeURIComponent(ticker)}/indicators`),
+  market: () => request<MarketResponse>("/api/market"),
+  predictionHistory: (ticker: string) =>
+    request<PredictionHistoryResponse>(`/api/stocks/${encodeURIComponent(ticker)}/predictions`),
+  trackRecord: () => request<TrackRecordResponse>("/api/track-record"),
 };

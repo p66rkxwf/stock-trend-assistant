@@ -15,7 +15,7 @@ import time
 
 from stockta.ml.dataset import build_dataset
 from stockta.ml.evaluate import evaluate
-from stockta.ml.train import DEEP_MODEL_NAMES, create_model, load_pool_ohlcv
+from stockta.ml.train import DEEP_MODEL_NAMES, create_model, load_market_context, load_pool_ohlcv
 from stockta.ml import registry
 
 # 小而有代表性的網格：容量（hidden/layers）、學習率、正則化（dropout）各兩三檔
@@ -35,7 +35,8 @@ def main() -> None:
     args = parser.parse_args()
 
     ohlcv = load_pool_ohlcv(args.tickers)
-    ds = build_dataset(ohlcv, stride=args.stride)
+    context = load_market_context(ohlcv)
+    ds = build_dataset(ohlcv, context, stride=args.stride)
     print(f"train={len(ds.y_train)} val={len(ds.y_val)} test={len(ds.y_test)}")
 
     keys = list(GRID)

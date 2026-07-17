@@ -13,6 +13,8 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
+from stockta.features.market import MARKET_CONTEXT_COLUMNS
+
 # 特徵欄位的唯一順序 —— artifact metadata 記錄此清單，API 啟動時比對，不一致拒絕載入
 FEATURE_COLUMNS = [
     "ret_1d",
@@ -32,12 +34,18 @@ FEATURE_COLUMNS = [
     "vol_ratio",
     "vol_chg",
     "hl_range",
+    # 市場情境（features/market.py 的 context 欄位 + 個股相對大盤）
+    *MARKET_CONTEXT_COLUMNS,
+    "rel_ret_1d",
+    "rel_ret_5d",
 ]
 
 
-def build_features(ohlcv: pd.DataFrame) -> pd.DataFrame:
-    """輸入 open/high/low/close/volume（日期索引遞增），輸出 FEATURE_COLUMNS 特徵。
+def build_features(ohlcv: pd.DataFrame, context: pd.DataFrame) -> pd.DataFrame:
+    """輸入個股 OHLCV 與市場情境 context（build_market_context 產物），輸出特徵。
 
+    context 為必要參數——訓練與推論必須帶同一種市場情境，缺了就該炸，
+    不做預設值以免兩端默默分岔。個股交易日在 context 缺漏的列隨 dropna 丟棄。
     暖機期不足的前段列（rolling/EMA 尚無值）會被丟棄，回傳列數少於輸入列數。
     """
     close = ohlcv["close"].astype("float64")
@@ -78,6 +86,13 @@ def build_features(ohlcv: pd.DataFrame) -> pd.DataFrame:
     out["vol_ratio"] = (volume / vol_ma20 - 1.0).where(vol_ma20 > 0, 0.0)
     out["vol_chg"] = volume.pct_change().replace([np.inf, -np.inf], 0.0)
     out["hl_range"] = (high - low) / close
+
+    # 市場情境：以個股交易日對齊 context（個股停牌日自然缺列、隨 dropna 丟棄）
+    ctx = context.reindex(out.index)
+    for col in MARKET_CONTEXT_COLUMNS:
+        out[col] = ctx[col]
+    out["rel_ret_1d"] = out["ret_1d"] - ctx["mkt_ret_1d"]
+    out["rel_ret_5d"] = out["ret_5d"] - ctx["mkt_ret_5d"]
 
     return out[FEATURE_COLUMNS].dropna()
 

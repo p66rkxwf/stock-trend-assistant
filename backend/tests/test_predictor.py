@@ -15,16 +15,17 @@ def test_high_confidence_directional_signal_kept():
 
 
 def test_low_confidence_up_downgraded_to_hold():
-    tau = SIGNAL_CONFIDENCE_THRESHOLDS["漲"]
-    proba = np.array([0.30, 0.30, 0.40])
-    assert proba[UP] < tau, "測資前提：漲的信心需低於門檻"
+    # 測資由當前門檻動態推導：漲的信心 = 門檻 − 0.01，仍為 argmax
+    up = SIGNAL_CONFIDENCE_THRESHOLDS["漲"] - 0.01
+    proba = np.array([(1 - up) / 2 - 0.05, (1 - up) / 2 + 0.05, up])
+    assert proba.argmax() == UP, "測資前提：漲需為 argmax"
     assert resolve_signal(proba) == HOLD
 
 
 def test_low_confidence_down_downgraded_to_hold():
-    tau = SIGNAL_CONFIDENCE_THRESHOLDS["跌"]
-    proba = np.array([0.40, 0.31, 0.29])
-    assert proba[DOWN] < tau, "測資前提：跌的信心需低於門檻"
+    down = SIGNAL_CONFIDENCE_THRESHOLDS["跌"] - 0.01
+    proba = np.array([down, (1 - down) / 2 + 0.05, (1 - down) / 2 - 0.05])
+    assert proba.argmax() == DOWN, "測資前提：跌需為 argmax"
     assert resolve_signal(proba) == HOLD
 
 

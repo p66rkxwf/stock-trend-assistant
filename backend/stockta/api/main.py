@@ -11,9 +11,16 @@ from slowapi.util import get_remote_address
 
 from stockta.api.errors import ApiError, api_error_handler
 from stockta.api.routers import meta, stocks
-from stockta.config import AUTO_ADJUST, DATA_CACHE_DIR, PREDICTIONS_DB_PATH, PRODUCTION_MODEL
+from stockta.config import (
+    AUTO_ADJUST,
+    DATA_CACHE_DIR,
+    PREDICTIONS_DB_PATH,
+    PRODUCTION_MODEL,
+    STOCK_POOL,
+)
 from stockta.data.cache import ParquetCache
 from stockta.data.provider import YFinanceProvider
+from stockta.inference.market_context import MarketContextService
 from stockta.inference.predictor import Predictor
 from stockta.inference.store import PredictionStore
 from stockta.ml.registry import ArtifactContractError
@@ -31,6 +38,9 @@ limiter = Limiter(key_func=get_remote_address, default_limits=["60/minute"])
 async def lifespan(app: FastAPI):
     cache = ParquetCache(DATA_CACHE_DIR)
     app.state.data_provider = YFinanceProvider(cache=cache, auto_adjust=AUTO_ADJUST)
+    app.state.market_context = MarketContextService(
+        app.state.data_provider, cache, list(STOCK_POOL)
+    )
 
     try:
         app.state.predictor = Predictor.from_registry(PRODUCTION_MODEL)

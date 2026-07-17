@@ -27,6 +27,7 @@ from stockta.config import (
     LABEL_DOWN_THRESHOLD,
     LABEL_HORIZON_DAYS,
     LABEL_UP_THRESHOLD,
+    MARKET_INDEX_TICKER,
     PRODUCTION_MODEL,
     SIGNAL_CONFIDENCE_THRESHOLDS,
     SPLIT_TRAIN_END,
@@ -37,6 +38,7 @@ from stockta.config import (
 from stockta.data.cache import ParquetCache
 from stockta.data.calendar import last_completed_trading_day
 from stockta.data.provider import DataProviderError, YFinanceProvider
+from stockta.features.market import build_market_context
 from stockta.features.pipeline import build_features
 from stockta.inference.predictor import Predictor
 from stockta.ml.labeling import make_labels
@@ -45,10 +47,10 @@ DOCS_DIR = BACKEND_ROOT.parent / "docs"
 
 
 def collect_probas(
-    predictor: Predictor, ohlcv: pd.DataFrame, start: pd.Timestamp
+    predictor: Predictor, ohlcv: pd.DataFrame, context: pd.DataFrame, start: pd.Timestamp
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """回傳 (機率 (n,3), 實際類別, 視窗終點日)；無有效樣本回空陣列。"""
-    feats = build_features(ohlcv)
+    feats = build_features(ohlcv, context)
     labels = make_labels(ohlcv["close"]).reindex(feats.index)
     if len(feats) < WINDOW_LENGTH_DAYS:
         return np.empty((0, 3)), np.empty(0), np.empty(0)
@@ -110,16 +112,20 @@ def main() -> int:
     fetch_start = start.date() - timedelta(days=730)  # 特徵暖機 + 視窗所需的前置歷史
     print(f"模型：{predictor.version}；回測期間 {args.start} 之後 ~ {end}")
 
+    pool_ohlcv: dict[str, pd.DataFrame] = {}
+    for ticker in STOCK_POOL:
+        try:
+            pool_ohlcv[ticker] = provider.get_ohlcv(ticker, fetch_start, end)
+        except DataProviderError as exc:
+            print(f"[略過] {ticker}: {exc}")
+    market = provider.get_ohlcv(MARKET_INDEX_TICKER, fetch_start, end)
+    context = build_market_context(market, pool_ohlcv)
+
     probas: list[np.ndarray] = []
     actuals: list[np.ndarray] = []
     dates: list[np.ndarray] = []
-    for ticker in STOCK_POOL:
-        try:
-            df = provider.get_ohlcv(ticker, fetch_start, end)
-        except DataProviderError as exc:
-            print(f"[略過] {ticker}: {exc}")
-            continue
-        p, a, d = collect_probas(predictor, df, start)
+    for ticker, df in pool_ohlcv.items():
+        p, a, d = collect_probas(predictor, df, context, start)
         if len(p):
             probas.append(p)
             actuals.append(a)
@@ -192,6 +198,9 @@ def main() -> int:
         "  命中率明顯衰退（校準後 43.5%）；將切分前移兩年（train≤2024、val=2025）重訓並",
         "  重新選型/校準後，2026 年校準後命中率提升至 45.5%。舊 artifact 備份於",
         "  backend/artifacts_backup_2022split/。",
+        "- **市場情境特徵（已採用，2026-07-18）**：特徵 17→25 欄（大盤指數、市場寬度、",
+        "  個股相對大盤），以驗證 Macro AUC 選 gru（0.6709）；argmax 訊號分佈自然平衡、",
+        "  不再過度偏跌，2026 年校準後命中率 45.5% → 47.6%（原始 argmax 47.9%）。",
         "- **五模型機率平均集成（試過，不採用）**：以首輪模型於 2024–2026 評測，最佳組合",
         "  （lstm+gru+tcn）僅比單一模型高 0.3 個百分點，卻犧牲喊漲精度且 API 需載入多個",
         "  模型。",

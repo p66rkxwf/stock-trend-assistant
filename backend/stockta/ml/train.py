@@ -18,6 +18,7 @@ from stockta.config import (
     AUTO_ADJUST,
     DATA_CACHE_DIR,
     HISTORY_YEARS,
+    MARKET_INDEX_TICKER,
     SPLIT_TRAIN_END,
     SPLIT_VAL_END,
     STOCK_POOL,
@@ -25,6 +26,7 @@ from stockta.config import (
 from stockta.data.cache import ParquetCache
 from stockta.data.calendar import last_completed_trading_day
 from stockta.data.provider import DataProviderError, YFinanceProvider
+from stockta.features.market import build_market_context
 from stockta.ml.dataset import build_dataset
 from stockta.ml.evaluate import evaluate
 from stockta.ml.models.baselines import MODEL_FACTORIES
@@ -60,6 +62,17 @@ def load_pool_ohlcv(tickers: list[str] | None = None) -> dict[str, pd.DataFrame]
     return out
 
 
+def load_market_context(ohlcv_by_ticker: dict[str, pd.DataFrame]) -> pd.DataFrame:
+    """抓大盤指數並建出市場情境 context（訓練/調參/回測共用）。"""
+    provider = YFinanceProvider(
+        cache=ParquetCache(DATA_CACHE_DIR), auto_adjust=AUTO_ADJUST, max_cache_age_days=3.0
+    )
+    end = last_completed_trading_day()
+    start = end - timedelta(days=HISTORY_YEARS * 365)
+    market = provider.get_ohlcv(MARKET_INDEX_TICKER, start, end)
+    return build_market_context(market, ohlcv_by_ticker)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="訓練趨勢分類模型")
     parser.add_argument("--model", required=True, choices=ALL_MODEL_NAMES)
@@ -69,9 +82,10 @@ def main() -> None:
 
     print(f"載入 {len(args.tickers or STOCK_POOL)} 檔股票資料…")
     ohlcv = load_pool_ohlcv(args.tickers)
+    context = load_market_context(ohlcv)
 
     print(f"建立資料集（stride={args.stride}）…")
-    ds = build_dataset(ohlcv, stride=args.stride)
+    ds = build_dataset(ohlcv, context, stride=args.stride)
     print(
         f"train={len(ds.y_train)} val={len(ds.y_val)} test={len(ds.y_test)}"
         f"（切分：訓練 ≤{SPLIT_TRAIN_END}、驗證 ≤{SPLIT_VAL_END}、其後測試）"

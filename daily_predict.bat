@@ -1,6 +1,7 @@
 @echo off
-rem 每日線上預測累積：記錄股票池預測 + 更新實證報告（收盤後執行，約 1-2 分鐘）
-rem 手動雙擊：跑完停在畫面上；排程呼叫（帶 scheduled 參數）：結果寫入 logs\daily_predict.log
+rem Daily online prediction: record pool predictions + refresh report (run after market close).
+rem Double-click: results stay on screen. Scheduled mode (arg "scheduled"): append to logs\daily_predict.log.
+rem Keep this file ASCII-only: cmd.exe parses batch files with the ANSI codepage, not UTF-8.
 cd /d "%~dp0backend"
 set PYTHONIOENCODING=utf-8
 if "%~1"=="scheduled" (

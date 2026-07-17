@@ -39,20 +39,22 @@ class Dataset:
 
 def build_dataset(
     ohlcv_by_ticker: dict[str, pd.DataFrame],
+    context: pd.DataFrame,
     window: int = WINDOW_LENGTH_DAYS,
     stride: int = 1,
 ) -> Dataset:
-    """由多檔股票的 OHLCV 建出訓練/驗證/測試集。
+    """由多檔股票的 OHLCV 與市場情境 context 建出訓練/驗證/測試集。
 
-    stride > 1 時每隔 stride 個交易日取一個樣本（相鄰視窗重疊 59/60，
-    子取樣可大幅降低訓練時間而幾乎不損失資訊量）。
+    context 由 features.market.build_market_context() 產生（大盤 + 寬度），
+    全部股票共用同一份。stride > 1 時每隔 stride 個交易日取一個樣本
+    （相鄰視窗重疊 59/60，子取樣可大幅降低訓練時間而幾乎不損失資訊量）。
     """
     train_end = pd.Timestamp(SPLIT_TRAIN_END)
     val_end = pd.Timestamp(SPLIT_VAL_END)
 
     feats: list[tuple[pd.DataFrame, pd.Series]] = []
     for ohlcv in ohlcv_by_ticker.values():
-        f = build_features(ohlcv)
+        f = build_features(ohlcv, context)
         labels = make_labels(ohlcv["close"]).reindex(f.index)
         feats.append((f, labels))
 

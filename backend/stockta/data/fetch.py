@@ -21,6 +21,7 @@ from stockta.config import (
     DATA_CACHE_DIR,
     HISTORY_YEARS,
     LABEL_HORIZON_DAYS,
+    MARKET_INDEX_TICKER,
     STOCK_POOL,
 )
 from stockta.data.cache import ParquetCache
@@ -70,6 +71,14 @@ def main() -> None:
         )
         print(f"[{i}/{len(STOCK_POOL)}] {ticker} {name}: {len(df)} 個交易日")
         time.sleep(PAUSE_SECONDS)
+
+    # 大盤指數（市場情境特徵用）——不列入個股標籤統計
+    try:
+        market = provider.get_ohlcv(MARKET_INDEX_TICKER, start, end)
+        print(f"{MARKET_INDEX_TICKER} 加權指數: {len(market)} 個交易日")
+    except DataProviderError as exc:
+        print(f"{MARKET_INDEX_TICKER} 加權指數 失敗: {exc}")
+        failed.append(f"{MARKET_INDEX_TICKER} 加權指數")
 
     _write_report(rows, label_totals, failed, str(start), str(end))
 
