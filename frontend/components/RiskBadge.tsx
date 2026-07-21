@@ -1,15 +1,18 @@
 import type { RiskLevel } from "@/lib/api";
 
-const STYLES: Record<RiskLevel, string> = {
-  低: "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300",
-  中: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300",
-  高: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300",
+// 風險為狀態型配色（低綠/中黃/高紅），與台股漲跌無關，另附文字標籤
+const STYLE: Record<RiskLevel, { fg: string; bg: string }> = {
+  低: { fg: "var(--down)", bg: "var(--down-soft)" },
+  中: { fg: "#b45309", bg: "rgba(180,131,9,0.14)" },
+  高: { fg: "var(--up)", bg: "var(--up-soft)" },
 };
 
 export default function RiskBadge({ risk }: { risk: RiskLevel }) {
+  const s = STYLE[risk];
   return (
     <span
-      className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium ${STYLES[risk]}`}
+      className="inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold"
+      style={{ color: s.fg, background: s.bg }}
       title="依近 60 日年化波動率換算"
     >
       {risk}風險

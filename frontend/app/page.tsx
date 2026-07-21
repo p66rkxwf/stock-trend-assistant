@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * 主儀表板：代號搜尋 → K 線圖（range 切換）＋ 預測卡片（三類機率）＋ 技術指標
+ * 主儀表板：代號搜尋 → K 線圖 ＋ 預測卡（三類機率）＋ 熱門標的總覽 ＋ 技術指標
  * ＋ 大盤情境 ＋ 新聞情緒（跨專案）＋ 線上預測實證 ＋ 模型資訊列。
  * 主資料（K 線/預測）失敗顯示錯誤橫幅；次要卡片各自降級，不影響主頁。
  */
@@ -12,8 +12,10 @@ import IndicatorPanel from "@/components/IndicatorPanel";
 import MarketCard from "@/components/MarketCard";
 import PredictionCard from "@/components/PredictionCard";
 import SentimentCard from "@/components/SentimentCard";
+import ThemeToggle from "@/components/ThemeToggle";
 import TickerSearch from "@/components/TickerSearch";
 import TrackRecordCard from "@/components/TrackRecordCard";
+import WatchlistSignals from "@/components/WatchlistSignals";
 import {
   api,
   ApiError,
@@ -28,6 +30,25 @@ import {
 } from "@/lib/api";
 
 const RANGES = ["1mo", "3mo", "6mo", "1y", "2y", "5y"] as const;
+
+function Card({ title, children, className = "", action }: {
+  title?: string;
+  children: React.ReactNode;
+  className?: string;
+  action?: React.ReactNode;
+}) {
+  return (
+    <section className={`rounded-2xl border border-border bg-surface p-5 shadow-(--shadow-sm) ${className}`}>
+      {title && (
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <h2 className="text-sm font-semibold text-ink-2">{title}</h2>
+          {action}
+        </div>
+      )}
+      {children}
+    </section>
+  );
+}
 
 export default function Home() {
   const [stocks, setStocks] = useState<StockInfo[]>([]);
@@ -53,7 +74,6 @@ export default function Home() {
   const load = useCallback(async (t: string, r: string) => {
     setLoading(true);
     setError(null);
-    // 次要資料各自載入，失敗只隱藏對應卡片
     api.indicators(t).then(setIndicators).catch(() => setIndicators(null));
     api.predictionHistory(t).then((h) => setHistory(h.records)).catch(() => setHistory([]));
     try {
@@ -80,90 +100,104 @@ export default function Home() {
   const stockName = stocks.find((s) => s.ticker === ticker)?.name ?? "";
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-8">
+    <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">
       <header className="mb-6 flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">台股趨勢預測助理</h1>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            深度學習模型 × 技術指標 × 市場情境 × 台灣 50 成分股
-          </p>
+        <div className="flex items-center gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-accent text-accent-fg shadow-(--shadow-md)">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 3v18h18" />
+              <path d="M19 9l-5 5-4-4-3 3" />
+            </svg>
+          </div>
+          <div>
+            <h1 className="text-xl font-bold tracking-tight sm:text-2xl">台股趨勢預測助理</h1>
+            <p className="mt-0.5 text-sm text-ink-3">深度學習 · 技術指標 · 市場情境 · 台灣 50</p>
+          </div>
         </div>
-        <TickerSearch stocks={stocks} selected={ticker} onSelect={setTicker} />
+        <div className="flex items-center gap-2">
+          <TickerSearch stocks={stocks} selected={ticker} onSelect={setTicker} />
+          <ThemeToggle />
+        </div>
       </header>
 
       {error && (
-        <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/30 dark:text-red-300">
+        <div
+          className="mb-6 rounded-xl border px-4 py-3 text-sm"
+          style={{ borderColor: "var(--up)", background: "var(--up-soft)", color: "var(--up)" }}
+        >
           {error}
         </div>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
-        <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-900">
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-lg font-semibold">
-              {stockName} <span className="text-gray-400">{ticker}</span>
-            </h2>
+      <div className="grid gap-5 lg:grid-cols-[2fr_1fr]">
+        <Card
+          className="animate-fadeup"
+          title={`${stockName} ${ticker}`}
+          action={
             <div className="flex gap-1">
               {RANGES.map((r) => (
                 <button
                   key={r}
                   type="button"
                   onClick={() => setRange(r)}
-                  className={`rounded-md px-2.5 py-1 text-xs font-medium transition ${
+                  className="rounded-md px-2.5 py-1 text-xs font-medium transition"
+                  style={
                     r === range
-                      ? "bg-blue-600 text-white"
-                      : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
-                  }`}
+                      ? { background: "var(--accent)", color: "var(--accent-fg)" }
+                      : { background: "var(--surface-2)", color: "var(--ink-2)" }
+                  }
                 >
                   {r}
                 </button>
               ))}
             </div>
-          </div>
-          {loading && (
-            <div className="flex h-[380px] items-center justify-center text-sm text-gray-400">
-              載入中…
-            </div>
-          )}
-          {!loading && candles && <CandleChart candles={candles} />}
-          {!loading && !candles && !error && (
-            <div className="flex h-[380px] items-center justify-center text-sm text-gray-400">
-              無資料
-            </div>
-          )}
-        </section>
+          }
+        >
+          {loading ? (
+            <div className="flex h-[380px] items-center justify-center text-sm text-ink-3">載入中…</div>
+          ) : candles ? (
+            <CandleChart candles={candles} />
+          ) : !error ? (
+            <div className="flex h-[380px] items-center justify-center text-sm text-ink-3">無資料</div>
+          ) : null}
+        </Card>
 
-        <aside className="space-y-4">
-          {loading && (
-            <div className="flex h-64 items-center justify-center rounded-xl border border-gray-200 text-sm text-gray-400 dark:border-gray-700">
-              載入中…
+        <aside className="space-y-5">
+          {!loading && prediction && (
+            <div className="animate-fadeup">
+              <PredictionCard prediction={prediction} testAuc={modelInfo?.test_auc ?? null} />
             </div>
           )}
-          {!loading && prediction && (
-            <PredictionCard prediction={prediction} testAuc={modelInfo?.test_auc ?? null} />
+          {loading && (
+            <div className="flex h-64 items-center justify-center rounded-2xl border border-border text-sm text-ink-3">
+              載入中…
+            </div>
           )}
         </aside>
       </div>
 
-      <div className="mt-6 grid gap-6 md:grid-cols-3">
-        {indicators && <IndicatorPanel indicators={indicators} />}
-        {market && <MarketCard market={market} />}
-        <SentimentCard twTicker={ticker} />
+      <div className="mt-5 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
+        <Card title="熱門標的預測總覽" className="animate-fadeup md:col-span-2 lg:col-span-1">
+          <WatchlistSignals stocks={stocks} selected={ticker} onSelect={setTicker} />
+        </Card>
+        {indicators && <div className="animate-fadeup"><IndicatorPanel indicators={indicators} /></div>}
+        {market && <div className="animate-fadeup"><MarketCard market={market} /></div>}
+        <div className="animate-fadeup"><SentimentCard twTicker={ticker} /></div>
       </div>
 
-      <div className="mt-6">
+      <div className="mt-5 animate-fadeup">
         <TrackRecordCard ticker={ticker} records={history} trackRecord={trackRecord} />
       </div>
 
       {modelInfo && !modelInfo.is_mock && (
-        <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-1 rounded-lg bg-gray-50 px-4 py-2.5 text-[11px] text-gray-500 dark:bg-gray-900 dark:text-gray-400">
+        <div className="mt-5 flex flex-wrap items-center justify-center gap-x-6 gap-y-1 rounded-xl border border-border bg-surface-2 px-4 py-2.5 text-[11px] text-ink-3">
           <span>模型版本 {modelInfo.model_version}</span>
           {modelInfo.test_auc != null && <span>測試集 Macro AUC {modelInfo.test_auc.toFixed(4)}</span>}
           <span>決策規則：方向訊號信心未達門檻時轉為觀望（驗證期校準）</span>
         </div>
       )}
 
-      <footer className="mt-8 text-center text-xs text-gray-400 dark:text-gray-600">
+      <footer className="mt-8 text-center text-xs text-ink-3">
         彰師大 115 年百萬專題探索 — 基於深度學習之股價趨勢預測與投資助理系統
       </footer>
     </main>

@@ -9,7 +9,7 @@ const NEWS_API_BASE = process.env.NEXT_PUBLIC_NEWS_API_BASE ?? "http://localhost
 export type SentimentLabel = "negative" | "neutral" | "positive";
 
 export interface KeywordScore {
-  keyword: string;
+  word: string;
   score: number;
 }
 
