@@ -10,6 +10,7 @@ import { useCallback, useEffect, useState } from "react";
 import CandleChart from "@/components/CandleChart";
 import IndicatorPanel from "@/components/IndicatorPanel";
 import MarketCard from "@/components/MarketCard";
+import NavTabs from "@/components/NavTabs";
 import PredictionCard from "@/components/PredictionCard";
 import SentimentCard from "@/components/SentimentCard";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -115,6 +116,7 @@ export default function Home() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <NavTabs current="dashboard" />
           <TickerSearch stocks={stocks} selected={ticker} onSelect={setTicker} />
           <ThemeToggle />
         </div>

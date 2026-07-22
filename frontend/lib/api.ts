@@ -81,6 +81,31 @@ export interface TrackRecordResponse {
   since: string | null;
 }
 
+export interface ScanResult {
+  ticker: string;
+  name: string;
+  signal: Signal;
+  confidence: number;
+  risk: RiskLevel | null;
+  proba: Record<Signal, number>;
+  actual: Signal | null;
+  actual_return: number | null;
+  hit: boolean | null;
+}
+
+export interface ScanResponse {
+  base_date: string;
+  model_version: string;
+  is_historical: boolean;
+  up: number;
+  hold: number;
+  down: number;
+  matured: number;
+  hits: number;
+  results: ScanResult[];
+  is_mock: boolean;
+}
+
 export interface StockInfo {
   ticker: string;
   name: string;
@@ -131,4 +156,6 @@ export const api = {
   predictionHistory: (ticker: string) =>
     request<PredictionHistoryResponse>(`/api/stocks/${encodeURIComponent(ticker)}/predictions`),
   trackRecord: () => request<TrackRecordResponse>("/api/track-record"),
+  scan: (date?: string) =>
+    request<ScanResponse>(`/api/scan${date ? `?date=${encodeURIComponent(date)}` : ""}`),
 };

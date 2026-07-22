@@ -40,6 +40,36 @@ class PredictionResponse(BaseModel):
     )
 
 
+class ScanResult(BaseModel):
+    """全池掃描的單一標的結果。歷史日期查詢時附實際 5 日結果。"""
+
+    ticker: str
+    name: str
+    signal: Signal
+    confidence: float = Field(ge=0, le=1)
+    risk: RiskLevel | None = None
+    proba: dict[str, float]
+    actual: Signal | None = Field(default=None, description="歷史查詢且已到期時的實際 5 日趨勢")
+    actual_return: float | None = None
+    hit: bool | None = None
+
+
+class ScanResponse(BaseModel):
+    """全股票池掃描：對每檔以 production 模型推論的趨勢訊號。
+    無 date 參數＝即時掃描；帶 date＝歷史某日的 point-in-time 重算（附實際結果）。"""
+
+    base_date: date = Field(description="推論所依據的最後一個交易日")
+    model_version: str
+    is_historical: bool = Field(default=False)
+    up: int = Field(description="訊號為「漲」的檔數")
+    hold: int = Field(description="訊號為「觀望」的檔數")
+    down: int = Field(description="訊號為「跌」的檔數")
+    matured: int = Field(default=0, description="歷史查詢中已到期（可對照實際）的檔數")
+    hits: int = Field(default=0, description="其中命中的檔數")
+    results: list[ScanResult]
+    is_mock: bool = Field(default=False)
+
+
 class IndicatorsResponse(BaseModel):
     """當前技術指標快照（與模型特徵同一條 build_features 路徑，數值一致）。"""
 
