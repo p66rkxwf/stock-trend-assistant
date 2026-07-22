@@ -86,6 +86,18 @@ def test_indicators_snapshot(client):
         assert field in body
 
 
+def test_history_mock_mode(client):
+    r = client.get("/api/stocks/2330.TW/history")
+    assert r.status_code == 200
+    assert r.json()["records"] == []
+
+
+def test_history_bad_range(client_with_model):
+    r = client_with_model.get("/api/stocks/2330.TW/history?start=2026-06-01&end=2026-05-01")
+    assert r.status_code == 422
+    assert r.json()["error"]["code"] == "INVALID_RANGE"
+
+
 def test_scan_mock_mode(client):
     r = client.get("/api/scan")
     assert r.status_code == 200

@@ -9,6 +9,7 @@
 import { useCallback, useEffect, useState } from "react";
 import CandleChart from "@/components/CandleChart";
 import IndicatorPanel from "@/components/IndicatorPanel";
+import HistoryReplayCard from "@/components/HistoryReplayCard";
 import MarketCard from "@/components/MarketCard";
 import NavTabs from "@/components/NavTabs";
 import PredictionCard from "@/components/PredictionCard";
@@ -31,6 +32,58 @@ import {
 } from "@/lib/api";
 
 const RANGES = ["1mo", "3mo", "6mo", "1y", "2y", "5y"] as const;
+
+function isoDaysAgo(days: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() - days);
+  return d.toISOString().slice(0, 10);
+}
+
+/** K 線自訂日期區間；套用後覆蓋預設 range，清除則回預設。 */
+function CustomRangeRow({
+  custom,
+  onApply,
+}: {
+  custom: { start: string; end: string } | null;
+  onApply: (v: { start: string; end: string } | null) => void;
+}) {
+  const [start, setStart] = useState(custom?.start ?? isoDaysAgo(365));
+  const [end, setEnd] = useState(custom?.end ?? isoDaysAgo(0));
+  return (
+    <div className="mb-3 flex flex-wrap items-center gap-2 text-xs text-ink-3">
+      <span>自訂區間</span>
+      <input
+        type="date"
+        value={start}
+        onChange={(e) => setStart(e.target.value)}
+        className="rounded-md border border-border bg-surface px-2 py-1 text-ink outline-none focus:border-accent"
+      />
+      <span>~</span>
+      <input
+        type="date"
+        value={end}
+        onChange={(e) => setEnd(e.target.value)}
+        className="rounded-md border border-border bg-surface px-2 py-1 text-ink outline-none focus:border-accent"
+      />
+      <button
+        type="button"
+        onClick={() => onApply({ start, end })}
+        className="rounded-md bg-accent px-2.5 py-1 font-semibold text-accent-fg transition hover:opacity-90"
+      >
+        套用
+      </button>
+      {custom && (
+        <button
+          type="button"
+          onClick={() => onApply(null)}
+          className="rounded-md bg-surface-2 px-2.5 py-1 font-medium text-ink-2 transition hover:text-ink"
+        >
+          清除
+        </button>
+      )}
+    </div>
+  );
+}
 
 function Card({ title, children, className = "", action }: {
   title?: string;
@@ -55,6 +108,7 @@ export default function Home() {
   const [stocks, setStocks] = useState<StockInfo[]>([]);
   const [ticker, setTicker] = useState("2330.TW");
   const [range, setRange] = useState<(typeof RANGES)[number]>("1y");
+  const [custom, setCustom] = useState<{ start: string; end: string } | null>(null);
   const [candles, setCandles] = useState<Candle[] | null>(null);
   const [prediction, setPrediction] = useState<PredictionResponse | null>(null);
   const [modelInfo, setModelInfo] = useState<ModelInfoResponse | null>(null);
@@ -72,31 +126,35 @@ export default function Home() {
     api.trackRecord().then(setTrackRecord).catch(() => setTrackRecord(null));
   }, []);
 
-  const load = useCallback(async (t: string, r: string) => {
-    setLoading(true);
-    setError(null);
-    api.indicators(t).then(setIndicators).catch(() => setIndicators(null));
-    api.predictionHistory(t).then((h) => setHistory(h.records)).catch(() => setHistory([]));
-    try {
-      const [c, p] = await Promise.all([api.candles(t, r), api.prediction(t)]);
-      setCandles(c.candles);
-      setPrediction(p);
-    } catch (e) {
-      setCandles(null);
-      setPrediction(null);
-      if (e instanceof ApiError) {
-        setError(e.status === 503 ? `資料源暫時無法使用：${e.message}` : e.message);
-      } else {
-        setError("發生未知錯誤");
+  const load = useCallback(
+    async (t: string, r: string, c: { start: string; end: string } | null) => {
+      setLoading(true);
+      setError(null);
+      api.indicators(t).then(setIndicators).catch(() => setIndicators(null));
+      api.predictionHistory(t).then((h) => setHistory(h.records)).catch(() => setHistory([]));
+      try {
+        const candlesReq = c ? api.candles(t, r, c.start, c.end) : api.candles(t, r);
+        const [cd, p] = await Promise.all([candlesReq, api.prediction(t)]);
+        setCandles(cd.candles);
+        setPrediction(p);
+      } catch (e) {
+        setCandles(null);
+        setPrediction(null);
+        if (e instanceof ApiError) {
+          setError(e.status === 503 ? `資料源暫時無法使用：${e.message}` : e.message);
+        } else {
+          setError("發生未知錯誤");
+        }
+      } finally {
+        setLoading(false);
       }
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    },
+    [],
+  );
 
   useEffect(() => {
-    load(ticker, range);
-  }, [ticker, range, load]);
+    load(ticker, range, custom);
+  }, [ticker, range, custom, load]);
 
   const stockName = stocks.find((s) => s.ticker === ticker)?.name ?? "";
 
@@ -141,10 +199,13 @@ export default function Home() {
                 <button
                   key={r}
                   type="button"
-                  onClick={() => setRange(r)}
+                  onClick={() => {
+                    setCustom(null);
+                    setRange(r);
+                  }}
                   className="rounded-md px-2.5 py-1 text-xs font-medium transition"
                   style={
-                    r === range
+                    r === range && !custom
                       ? { background: "var(--accent)", color: "var(--accent-fg)" }
                       : { background: "var(--surface-2)", color: "var(--ink-2)" }
                   }
@@ -155,6 +216,7 @@ export default function Home() {
             </div>
           }
         >
+          <CustomRangeRow custom={custom} onApply={setCustom} />
           {loading ? (
             <div className="flex h-[380px] items-center justify-center text-sm text-ink-3">載入中…</div>
           ) : candles ? (
@@ -189,6 +251,10 @@ export default function Home() {
 
       <div className="mt-5 animate-fadeup">
         <TrackRecordCard ticker={ticker} records={history} trackRecord={trackRecord} />
+      </div>
+
+      <div className="mt-5 animate-fadeup">
+        <HistoryReplayCard ticker={ticker} />
       </div>
 
       {modelInfo && !modelInfo.is_mock && (

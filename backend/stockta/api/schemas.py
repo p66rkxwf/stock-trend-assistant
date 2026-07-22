@@ -114,6 +114,27 @@ class PredictionHistoryResponse(BaseModel):
     records: list[PastPrediction]
 
 
+class HistoryRecord(BaseModel):
+    date: date
+    signal: Signal
+    confidence: float
+    actual: Signal
+    actual_return: float | None = None
+    hit: bool
+
+
+class StockHistoryResponse(BaseModel):
+    """單一標的的歷史預測回放（point-in-time 重算 vs 實際），僅含已到期樣本。"""
+
+    ticker: str
+    start: date
+    end: date
+    count: int
+    hits: int
+    hit_rate: float | None = None
+    records: list[HistoryRecord]
+
+
 class TrackRecordResponse(BaseModel):
     """全站線上實證摘要：predictions.db 已到期預測的即時命中統計。"""
 

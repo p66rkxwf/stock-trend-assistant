@@ -12,12 +12,15 @@ from stockta.api.errors import (
 from stockta.api.schemas import (
     Candle,
     CandlesResponse,
+    HistoryRecord,
     IndicatorsResponse,
     PastPrediction,
     PredictionHistoryResponse,
     PredictionResponse,
+    StockHistoryResponse,
 )
 from stockta.config import (
+    AUTO_ADJUST,
     DATA_CACHE_DIR,
     INDICATOR_WARMUP_DAYS,
     LABEL_CLASSES,
@@ -26,9 +29,10 @@ from stockta.config import (
 )
 from stockta.data.cache import ParquetCache
 from stockta.data.calendar import calendar_lookback_days, last_completed_trading_day
-from stockta.data.provider import DataProvider, DataProviderError
+from stockta.data.provider import DataProvider, DataProviderError, YFinanceProvider
 from stockta.features.pipeline import build_features
 from stockta.inference.predictor import InsufficientDataError, Predictor
+from stockta.inference.replay import context_fetch_start, history_series, load_pool_context
 from stockta.inference.risk import annualized_volatility, risk_level
 from stockta.ml.report_predictions import actual_signal
 
@@ -42,17 +46,30 @@ def get_candles(
     request: Request,
     ticker: str = Depends(get_valid_ticker),
     range: str = Query("1y", alias="range"),
+    start: str | None = Query(None, description="自訂起日 YYYY-MM-DD；與 end 並用時覆蓋 range"),
+    end: str | None = Query(None, description="自訂迄日 YYYY-MM-DD"),
 ) -> CandlesResponse:
-    days = _RANGE_TO_DAYS.get(range)
-    if days is None:
-        raise InvalidRangeError(range)
-
     provider: DataProvider = request.app.state.data_provider
-    end = last_completed_trading_day()
-    start = end - timedelta(days=days)
+    last_day = last_completed_trading_day()
+
+    if start or end:
+        # 自訂日期區間（覆蓋 range 預設）
+        try:
+            start_d = date.fromisoformat(start) if start else last_day - timedelta(days=365)
+            end_d = date.fromisoformat(end) if end else last_day
+        except ValueError as exc:
+            raise InvalidRangeError(f"日期格式需為 YYYY-MM-DD：start={start!r} end={end!r}") from exc
+        if start_d >= end_d:
+            raise InvalidRangeError(f"起日需早於迄日：{start_d} ~ {end_d}")
+    else:
+        days = _RANGE_TO_DAYS.get(range)
+        if days is None:
+            raise InvalidRangeError(range)
+        end_d = last_day
+        start_d = end_d - timedelta(days=days)
 
     try:
-        df = provider.get_ohlcv(ticker, start, end)
+        df = provider.get_ohlcv(ticker, start_d, end_d)
     except DataProviderError as exc:
         raise DataSourceUnavailableError(str(exc)) from exc
 
@@ -192,3 +209,61 @@ def get_prediction_history(
             )
         )
     return PredictionHistoryResponse(ticker=ticker, records=records)
+
+
+@router.get("/{ticker}/history", response_model=StockHistoryResponse)
+def get_history(
+    request: Request,
+    ticker: str = Depends(get_valid_ticker),
+    start: str | None = Query(None, description="起日 YYYY-MM-DD；省略＝近 180 天"),
+    end: str | None = Query(None, description="迄日 YYYY-MM-DD；省略＝最後交易日"),
+) -> StockHistoryResponse:
+    """單一標的的歷史預測回放（point-in-time 重算 vs 實際）；僅含已到期樣本。"""
+    import pandas as pd
+
+    last_day = last_completed_trading_day()
+    try:
+        end_d = date.fromisoformat(end) if end else last_day
+        start_d = date.fromisoformat(start) if start else end_d - timedelta(days=180)
+    except ValueError as exc:
+        raise InvalidRangeError(f"日期格式需為 YYYY-MM-DD：start={start!r} end={end!r}") from exc
+    if start_d >= end_d:
+        raise InvalidRangeError(f"起日需早於迄日：{start_d} ~ {end_d}")
+
+    predictor: Predictor | None = getattr(request.app.state, "predictor", None)
+    if predictor is None:
+        return StockHistoryResponse(
+            ticker=ticker, start=start_d, end=end_d, count=0, hits=0, records=[]
+        )
+
+    # 歷史回放讀本地全歷史快取，不打網路
+    provider = YFinanceProvider(
+        cache=ParquetCache(DATA_CACHE_DIR), auto_adjust=AUTO_ADJUST, max_cache_age_days=9999
+    )
+    fetch_start = context_fetch_start(start_d)
+    # 多抓 end 之後約 3 週：邊界附近的預測才算得出實際 5 日走勢（否則末幾日誤判為未到期）
+    fetch_end = end_d + timedelta(days=21)
+    try:
+        pool_ohlcv, context = load_pool_context(provider, fetch_start, fetch_end)
+    except DataProviderError as exc:
+        raise DataSourceUnavailableError(str(exc)) from exc
+    df = pool_ohlcv.get(ticker)
+    if df is None:
+        try:
+            df = provider.get_ohlcv(ticker, fetch_start, fetch_end)
+        except DataProviderError as exc:
+            raise DataSourceUnavailableError(str(exc)) from exc
+
+    series = history_series(
+        predictor, df, context, pd.Timestamp(start_d), pd.Timestamp(end_d)
+    )
+    hits = sum(1 for r in series if r["hit"])
+    return StockHistoryResponse(
+        ticker=ticker,
+        start=start_d,
+        end=end_d,
+        count=len(series),
+        hits=hits,
+        hit_rate=(hits / len(series)) if series else None,
+        records=[HistoryRecord(**r) for r in series],
+    )
