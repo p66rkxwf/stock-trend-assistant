@@ -16,7 +16,7 @@ from stockta.config import DATA_CACHE_DIR, PREDICTIONS_DB_PATH, STOCK_POOL
 from stockta.data.cache import ParquetCache
 from stockta.data.calendar import last_completed_trading_day
 from stockta.data.provider import DataProviderError
-from stockta.ml.report_predictions import actual_signal
+from stockta.ml.report_predictions import actual_signal, current_production_version
 
 router = APIRouter(tags=["meta"])
 
@@ -71,12 +71,21 @@ def market_snapshot(request: Request) -> MarketResponse:
 
 @router.get("/api/track-record", response_model=TrackRecordResponse)
 def track_record() -> TrackRecordResponse:
-    """全站線上實證摘要：predictions.db 已到期預測的命中統計（即時計算）。"""
+    """全站線上實證摘要：predictions.db 已到期預測的命中統計（即時計算）。
+    僅計現行 production 版本——歷次換模型的已淘汰版本不與現行版本混算。"""
+    prod = current_production_version()
     try:
         conn = sqlite3.connect(PREDICTIONS_DB_PATH)
-        rows = conn.execute(
-            "SELECT ticker, base_date, signal FROM predictions ORDER BY base_date"
-        ).fetchall()
+        if prod is not None:
+            rows = conn.execute(
+                "SELECT ticker, base_date, signal FROM predictions "
+                "WHERE model_version = ? ORDER BY base_date",
+                (prod,),
+            ).fetchall()
+        else:
+            rows = conn.execute(
+                "SELECT ticker, base_date, signal FROM predictions ORDER BY base_date"
+            ).fetchall()
         conn.close()
     except sqlite3.OperationalError:
         rows = []
