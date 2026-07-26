@@ -86,6 +86,40 @@ def test_indicators_snapshot(client):
         assert field in body
 
 
+def test_history_mock_mode(client):
+    r = client.get("/api/stocks/2330.TW/history")
+    assert r.status_code == 200
+    assert r.json()["records"] == []
+
+
+def test_history_bad_range(client_with_model):
+    r = client_with_model.get("/api/stocks/2330.TW/history?start=2026-06-01&end=2026-05-01")
+    assert r.status_code == 422
+    assert r.json()["error"]["code"] == "INVALID_RANGE"
+
+
+def test_scan_mock_mode(client):
+    r = client.get("/api/scan")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["is_mock"] is True
+    assert body["results"] == []
+
+
+def test_scan_with_model(client_with_model):
+    r = client_with_model.get("/api/scan")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["is_mock"] is False
+    assert len(body["results"]) > 0
+    # FakePredictor 固定回「漲」，計數與逐筆訊號需一致
+    assert body["up"] == len(body["results"])
+    assert body["up"] + body["hold"] + body["down"] == len(body["results"])
+    first = body["results"][0]
+    assert first["signal"] in ("漲", "跌", "觀望")
+    assert set(first["proba"]) == {"漲", "跌", "觀望"}
+
+
 def test_market_snapshot(client):
     r = client.get("/api/market")
     assert r.status_code == 200

@@ -81,6 +81,50 @@ export interface TrackRecordResponse {
   since: string | null;
 }
 
+export interface HistoryRecord {
+  date: string;
+  signal: Signal;
+  confidence: number;
+  actual: Signal;
+  actual_return: number | null;
+  hit: boolean;
+}
+
+export interface StockHistoryResponse {
+  ticker: string;
+  start: string;
+  end: string;
+  count: number;
+  hits: number;
+  hit_rate: number | null;
+  records: HistoryRecord[];
+}
+
+export interface ScanResult {
+  ticker: string;
+  name: string;
+  signal: Signal;
+  confidence: number;
+  risk: RiskLevel | null;
+  proba: Record<Signal, number>;
+  actual: Signal | null;
+  actual_return: number | null;
+  hit: boolean | null;
+}
+
+export interface ScanResponse {
+  base_date: string;
+  model_version: string;
+  is_historical: boolean;
+  up: number;
+  hold: number;
+  down: number;
+  matured: number;
+  hits: number;
+  results: ScanResult[];
+  is_mock: boolean;
+}
+
 export interface StockInfo {
   ticker: string;
   name: string;
@@ -120,8 +164,13 @@ async function request<T>(path: string): Promise<T> {
 
 export const api = {
   stocks: () => request<{ stocks: StockInfo[] }>("/api/stocks"),
-  candles: (ticker: string, range: string) =>
-    request<CandlesResponse>(`/api/stocks/${encodeURIComponent(ticker)}/candles?range=${range}`),
+  candles: (ticker: string, range: string, start?: string, end?: string) => {
+    const q =
+      start && end
+        ? `start=${start}&end=${end}`
+        : `range=${range}`;
+    return request<CandlesResponse>(`/api/stocks/${encodeURIComponent(ticker)}/candles?${q}`);
+  },
   prediction: (ticker: string) =>
     request<PredictionResponse>(`/api/stocks/${encodeURIComponent(ticker)}/prediction`),
   modelInfo: () => request<ModelInfoResponse>("/api/model"),
@@ -131,4 +180,10 @@ export const api = {
   predictionHistory: (ticker: string) =>
     request<PredictionHistoryResponse>(`/api/stocks/${encodeURIComponent(ticker)}/predictions`),
   trackRecord: () => request<TrackRecordResponse>("/api/track-record"),
+  scan: (date?: string) =>
+    request<ScanResponse>(`/api/scan${date ? `?date=${encodeURIComponent(date)}` : ""}`),
+  stockHistory: (ticker: string, start: string, end: string) =>
+    request<StockHistoryResponse>(
+      `/api/stocks/${encodeURIComponent(ticker)}/history?start=${start}&end=${end}`,
+    ),
 };
