@@ -160,24 +160,26 @@ export default function Home() {
 
   return (
     <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">
-      <header className="mb-6 flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-accent text-accent-fg shadow-(--shadow-md)">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M3 3v18h18" />
-              <path d="M19 9l-5 5-4-4-3 3" />
-            </svg>
+      <header className="mb-6 space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-accent text-accent-fg shadow-(--shadow-md)">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 3v18h18" />
+                <path d="M19 9l-5 5-4-4-3 3" />
+              </svg>
+            </div>
+            <div>
+              <h1 className="text-xl font-bold tracking-tight sm:text-2xl">台股趨勢預測助理</h1>
+              <p className="mt-0.5 text-sm text-ink-3">深度學習 · 技術指標 · 市場情境 · 台灣 50</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-xl font-bold tracking-tight sm:text-2xl">台股趨勢預測助理</h1>
-            <p className="mt-0.5 text-sm text-ink-3">深度學習 · 技術指標 · 市場情境 · 台灣 50</p>
+          <div className="flex items-center gap-2">
+            <NavTabs current="dashboard" />
+            <ThemeToggle />
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <NavTabs current="dashboard" />
-          <TickerSearch stocks={stocks} selected={ticker} onSelect={setTicker} />
-          <ThemeToggle />
-        </div>
+        <TickerSearch stocks={stocks} selected={ticker} onSelect={setTicker} />
       </header>
 
       {error && (
