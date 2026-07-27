@@ -100,6 +100,37 @@ export interface StockHistoryResponse {
   records: HistoryRecord[];
 }
 
+export interface RankResult {
+  ticker: string;
+  name: string;
+  score: number;
+  rank: number;
+  percentile: number;
+  quantile: "top" | "mid" | "bottom";
+}
+
+export interface RankResponse {
+  base_date: string;
+  model: string;
+  is_historical: boolean;
+  results: RankResult[];
+  is_mock: boolean;
+}
+
+export interface RankSummaryResponse {
+  available: boolean;
+  model: string | null;
+  test_rank_ic: number | null;
+  test_rank_ic_t: number | null;
+  val_rank_ic: number | null;
+  holding_days: number | null;
+  net_cum: number | null;
+  bench_cum: number | null;
+  net_excess_cum: number | null;
+  win_rate: number | null;
+  cost_bps: number | null;
+}
+
 export interface ScanResult {
   ticker: string;
   name: string;
@@ -182,6 +213,9 @@ export const api = {
   trackRecord: () => request<TrackRecordResponse>("/api/track-record"),
   scan: (date?: string) =>
     request<ScanResponse>(`/api/scan${date ? `?date=${encodeURIComponent(date)}` : ""}`),
+  rank: (date?: string) =>
+    request<RankResponse>(`/api/rank${date ? `?date=${encodeURIComponent(date)}` : ""}`),
+  rankSummary: () => request<RankSummaryResponse>("/api/rank/summary"),
   stockHistory: (ticker: string, start: string, end: string) =>
     request<StockHistoryResponse>(
       `/api/stocks/${encodeURIComponent(ticker)}/history?start=${start}&end=${end}`,

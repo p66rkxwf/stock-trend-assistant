@@ -7,8 +7,11 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import NavTabs from "@/components/NavTabs";
+import RankView from "@/components/RankView";
 import ThemeToggle from "@/components/ThemeToggle";
 import { api, ApiError, type ScanResponse, type ScanResult, type Signal } from "@/lib/api";
+
+type Mode = "signal" | "rank";
 
 const SIGNAL_VAR: Record<Signal, string> = { 漲: "--up", 跌: "--down", 觀望: "--hold" };
 type SortKey = "confidence" | "signal" | "name";
@@ -42,6 +45,7 @@ function DistributionBar({ up, hold, down }: { up: number; hold: number; down: n
 }
 
 export default function ScanPage() {
+  const [mode, setMode] = useState<Mode>("signal");
   const [data, setData] = useState<ScanResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -83,14 +87,37 @@ export default function ScanPage() {
       <header className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-xl font-bold tracking-tight sm:text-2xl">全池掃描</h1>
-          <p className="mt-0.5 text-sm text-ink-3">台灣 50 全池模型訊號總覽</p>
+          <p className="mt-0.5 text-sm text-ink-3">
+            {mode === "signal" ? "台灣 50 全池模型訊號總覽" : "相對強弱排序（cross-sectional）"}
+          </p>
         </div>
         <div className="flex items-center gap-2">
+          <div className="flex gap-1 rounded-lg bg-surface-2 p-1">
+            {(["signal", "rank"] as Mode[]).map((m) => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => setMode(m)}
+                className="rounded-md px-3 py-1.5 text-sm font-medium transition"
+                style={
+                  mode === m
+                    ? { background: "var(--surface)", color: "var(--ink)", boxShadow: "var(--shadow-sm)" }
+                    : { color: "var(--ink-3)" }
+                }
+              >
+                {m === "signal" ? "訊號" : "相對強弱排名"}
+              </button>
+            ))}
+          </div>
           <NavTabs current="scan" />
           <ThemeToggle />
         </div>
       </header>
 
+      {mode === "rank" && <RankView />}
+
+      {mode === "signal" && (
+      <>
       {/* 日期查詢列 */}
       <div className="mb-5 flex flex-wrap items-end gap-3 rounded-2xl border border-border bg-surface p-4 shadow-(--shadow-sm)">
         <div>
@@ -230,6 +257,8 @@ export default function ScanPage() {
           模型尚未載入，無法掃描。
         </div>
       ) : null}
+      </>
+      )}
 
       <footer className="mt-8 text-center text-xs text-ink-3">
         全池掃描與模型走同一條 build_features 推論路徑；歷史查詢為 point-in-time 重算，特徵僅用當日與更早資料。
