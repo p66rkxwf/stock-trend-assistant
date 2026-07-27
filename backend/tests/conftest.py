@@ -49,6 +49,21 @@ class FakeMarketContext:
         return self._context
 
 
+class _FakeCSModel:
+    """測試用 cross-sectional 模型：predict_proba 回固定二欄機率。"""
+
+    def predict_proba(self, X):
+        return np.tile([0.45, 0.55], (len(X), 1))
+
+
+class _IdentityScaler:
+    def transform(self, X):
+        return X
+
+
+FAKE_CS_MODEL = (_FakeCSModel(), _IdentityScaler(), {"model_name": "fake-cs"})
+
+
 def _random_walk(seed: int, periods: int = 600) -> pd.DataFrame:
     rng = np.random.default_rng(seed)
     idx = pd.bdate_range(end=pd.Timestamp.now().normalize(), periods=periods)
@@ -116,7 +131,10 @@ def client(fake_ohlcv, monkeypatch):
 
     from stockta.api import main as api_main
 
+    import stockta.ml.cross_sectional as cs_mod
+
     monkeypatch.setattr(api_main.Predictor, "from_registry", _no_local_artifact)
+    monkeypatch.setattr(cs_mod, "load_cs_model", _no_local_artifact)  # 測試不載真實 CS 模型
     with TestClient(api_main.app) as test_client:
         state = api_main.app.state
         state.limiter.enabled = False  # 測試逐案累計會誤觸限流
@@ -125,6 +143,7 @@ def client(fake_ohlcv, monkeypatch):
         state.market_context = FakeMarketContext(fake_ctx)
         state.predictor = None
         state.prediction_store = None
+        state.cs_model = None
         yield test_client
 
 
@@ -133,8 +152,10 @@ def client_with_model(fake_ohlcv, monkeypatch):
     from fastapi.testclient import TestClient
 
     from stockta.api import main as api_main
+    import stockta.ml.cross_sectional as cs_mod
 
     monkeypatch.setattr(api_main.Predictor, "from_registry", _no_local_artifact)
+    monkeypatch.setattr(cs_mod, "load_cs_model", lambda *a, **k: FAKE_CS_MODEL)
     with TestClient(api_main.app) as test_client:
         state = api_main.app.state
         state.limiter.enabled = False
@@ -143,4 +164,5 @@ def client_with_model(fake_ohlcv, monkeypatch):
         state.market_context = FakeMarketContext(fake_ctx)
         state.predictor = FakePredictor()
         state.prediction_store = None
+        state.cs_model = FAKE_CS_MODEL
         yield test_client

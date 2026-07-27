@@ -97,7 +97,7 @@ PRODUCTION_MODEL = "lstm"
 # === Cross-sectional 相對強弱排序（experiment_log #8；與上方 3 類絕對方向管線並存）===
 # 標籤＝未來 LABEL_HORIZON_DAYS 日報酬是否贏過「當日全池中位數」（二分類，設計上約 50%）。
 # 模型分數 = P(贏過中位數)，用於全池排序。sklearn RF/XGB（自動二分類）。
-CS_PRODUCTION_MODEL = "rf"  # 由 cross_sectional 以驗證期 Rank IC 選出後回填
+CS_PRODUCTION_MODEL = "xgb"  # 由 cross_sectional report 以驗證期 Rank IC 選出（rf≈xgb 皆 +0.0427，取 xgb）
 CS_TOP_FRACTION = 0.2  # 組合回測做多分數前 1/5
 CS_HOLDING_DAYS_CANDIDATES = (5, 10, 20)  # 掃描換股週期，以驗證期淨報酬選最佳
 # 台股來回交易成本（bp）：手續費 0.1425%×2 + 賣出證交稅 0.3% ≈ 58.5bp

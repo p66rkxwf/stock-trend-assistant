@@ -167,6 +167,20 @@ def load_cs_model(name: str):
     return bundle["model"], bundle["scaler"], meta
 
 
+def score_asof(model, scaler, ohlcv: pd.DataFrame, context: pd.DataFrame, as_of=None):
+    """單檔的 cross-sectional 分數＝P(贏過中位數)，用截至 as_of（含）的最後一個視窗。
+    as_of=None 表示用到資料末端（即時）。暖機後不足一個視窗回 None。"""
+    feats = build_features(ohlcv, context)
+    if as_of is not None:
+        feats = feats.loc[feats.index <= pd.Timestamp(as_of)]
+    if len(feats) < WINDOW_LENGTH_DAYS:
+        return None
+    window = feats.iloc[-WINDOW_LENGTH_DAYS:]
+    flat = window.to_numpy(dtype=np.float64).reshape(1, -1)
+    scaled = scaler.transform(flat).astype(np.float32)
+    return float(model.predict_proba(scaled)[0, 1]), window.index[-1].date()
+
+
 def _score_split(model, scaler, ds: CSData, mask: np.ndarray) -> np.ndarray:
     return model.predict_proba(scaler.transform(ds.X[mask]).astype(np.float32))[:, 1]
 
@@ -212,6 +226,20 @@ def report() -> None:
                             ds.rets_by_h[best_h][oos], best_h, CS_TOP_FRACTION, CS_COST_BPS)
 
     _write_report(best, val_ic, test_ic, spread, best_h, bt)
+    # 機器可讀摘要（/api/rank/summary 用）
+    summary = {
+        "model": best,
+        "val_rank_ic": val_ic["mean"], "val_rank_ic_t": val_ic["t"],
+        "test_rank_ic": test_ic["mean"], "test_rank_ic_t": test_ic["t"],
+        "test_by_year": test_ic["by_year"], "holding_days": best_h,
+        "net_cum": bt.get("net_cum"), "bench_cum": bt.get("bench_cum"),
+        "net_ann": bt.get("net_ann"), "bench_ann": bt.get("bench_ann"),
+        "net_excess_cum": bt.get("net_excess_cum"), "win_rate": bt.get("win_rate"),
+        "years": bt.get("years"), "cost_bps": CS_COST_BPS, "top_fraction": CS_TOP_FRACTION,
+    }
+    (ARTIFACTS_CS_DIR / "summary.json").write_text(
+        json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
     print(f"測試期 Rank IC {test_ic['mean']:+.4f}（t={test_ic['t']:.1f}）；報告已寫入 "
           f"{DOCS_DIR / 'cross_sectional_report.md'}")
 

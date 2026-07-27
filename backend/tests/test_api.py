@@ -120,6 +120,35 @@ def test_scan_with_model(client_with_model):
     assert set(first["proba"]) == {"漲", "跌", "觀望"}
 
 
+def test_rank_mock_mode(client):
+    r = client.get("/api/rank")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["is_mock"] is True
+    assert body["results"] == []
+
+
+def test_rank_with_model(client_with_model):
+    r = client_with_model.get("/api/rank")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["is_mock"] is False
+    assert len(body["results"]) > 0
+    first = body["results"][0]
+    assert first["rank"] == 1
+    assert 0.0 <= first["percentile"] <= 1.0
+    assert first["quantile"] in ("top", "mid", "bottom")
+    # rank 遞增、score 遞減
+    ranks = [x["rank"] for x in body["results"]]
+    assert ranks == sorted(ranks)
+
+
+def test_rank_summary_shape(client):
+    r = client.get("/api/rank/summary")
+    assert r.status_code == 200
+    assert "available" in r.json()
+
+
 def test_market_snapshot(client):
     r = client.get("/api/market")
     assert r.status_code == 200
