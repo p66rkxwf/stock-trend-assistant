@@ -40,6 +40,7 @@ _fix_curl_ca_bundle()
 BACKEND_ROOT = Path(__file__).resolve().parent.parent
 DATA_CACHE_DIR = BACKEND_ROOT / "data_cache"
 ARTIFACTS_DIR = BACKEND_ROOT / "artifacts"
+ARTIFACTS_CS_DIR = BACKEND_ROOT / "artifacts_cs"  # cross-sectional 排序模型（與 3 類分開）
 PREDICTIONS_DB_PATH = BACKEND_ROOT / "predictions.db"
 
 TAIPEI_TZ = ZoneInfo("Asia/Taipei")
@@ -92,6 +93,15 @@ HISTORY_YEARS = 20
 #   測試期最終驗證 gru 退步（45.1%）、lstm 持平（47.6%）→ 依「不部署最終驗證
 #   退步的模型」選 lstm。此為測試結果的防守性使用，已於 experiment_log #5 揭露
 PRODUCTION_MODEL = "lstm"
+
+# === Cross-sectional 相對強弱排序（experiment_log #8；與上方 3 類絕對方向管線並存）===
+# 標籤＝未來 LABEL_HORIZON_DAYS 日報酬是否贏過「當日全池中位數」（二分類，設計上約 50%）。
+# 模型分數 = P(贏過中位數)，用於全池排序。sklearn RF/XGB（自動二分類）。
+CS_PRODUCTION_MODEL = "xgb"  # 由 cross_sectional report 以驗證期 Rank IC 選出（rf≈xgb 皆 +0.0427，取 xgb）
+CS_TOP_FRACTION = 0.2  # 組合回測做多分數前 1/5
+CS_HOLDING_DAYS_CANDIDATES = (5, 10, 20)  # 掃描換股週期，以驗證期淨報酬選最佳
+# 台股來回交易成本（bp）：手續費 0.1425%×2 + 賣出證交稅 0.3% ≈ 58.5bp
+CS_COST_BPS = 58.5
 
 # 方向訊號信心門檻：信心低於門檻的方向訊號一律降級為「觀望」——少喊、喊得準。
 # 門檻僅以驗證期（2025）整體命中率網格搜尋選出（2026-07-18 對 20 年版 lstm 校準）。

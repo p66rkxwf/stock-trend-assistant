@@ -10,7 +10,7 @@ from slowapi.middleware import SlowAPIMiddleware
 from slowapi.util import get_remote_address
 
 from stockta.api.errors import ApiError, api_error_handler
-from stockta.api.routers import meta, scan, stocks
+from stockta.api.routers import meta, rank, scan, stocks
 from stockta.config import (
     AUTO_ADJUST,
     DATA_CACHE_DIR,
@@ -55,6 +55,17 @@ async def lifespan(app: FastAPI):
         # metadata 與程式碼不一致 = 模型會默默輸出錯誤預測，寧可拒絕啟動
         raise
 
+    # cross-sectional 相對強弱排序模型（獨立於 3 類；未訓練則 /api/rank 回 mock）
+    try:
+        from stockta.config import CS_PRODUCTION_MODEL
+        from stockta.ml.cross_sectional import load_cs_model
+
+        app.state.cs_model = load_cs_model(CS_PRODUCTION_MODEL)
+        logger.info("已載入 cross-sectional 模型 %s", CS_PRODUCTION_MODEL)
+    except (FileNotFoundError, OSError):
+        app.state.cs_model = None
+        logger.warning("找不到 cross-sectional 模型，/api/rank 以 mock 模式運作")
+
     yield
 
 
@@ -85,3 +96,4 @@ app.add_exception_handler(RateLimitExceeded, rate_limit_handler)
 app.include_router(meta.router)
 app.include_router(stocks.router)
 app.include_router(scan.router)
+app.include_router(rank.router)

@@ -40,6 +40,43 @@ class PredictionResponse(BaseModel):
     )
 
 
+class RankResult(BaseModel):
+    """cross-sectional 相對強弱排名的單一標的。"""
+
+    ticker: str
+    name: str
+    score: float = Field(ge=0, le=1, description="P(未來 5 日贏過全池中位數)")
+    rank: int = Field(description="1 = 相對最強")
+    percentile: float = Field(ge=0, le=1)
+    quantile: Literal["top", "mid", "bottom"]
+
+
+class RankResponse(BaseModel):
+    """全池 cross-sectional 排名；無 date=即時，帶 date=歷史某日 point-in-time。"""
+
+    base_date: date
+    model: str
+    is_historical: bool = False
+    results: list[RankResult]
+    is_mock: bool = False
+
+
+class RankSummaryResponse(BaseModel):
+    """cross-sectional 回測摘要（Rank IC + 扣成本組合），供前端策略卡。"""
+
+    model: str | None = None
+    test_rank_ic: float | None = None
+    test_rank_ic_t: float | None = None
+    val_rank_ic: float | None = None
+    holding_days: int | None = None
+    net_cum: float | None = None
+    bench_cum: float | None = None
+    net_excess_cum: float | None = None
+    win_rate: float | None = None
+    cost_bps: float | None = None
+    available: bool = False
+
+
 class ScanResult(BaseModel):
     """全池掃描的單一標的結果。歷史日期查詢時附實際 5 日結果。"""
 
