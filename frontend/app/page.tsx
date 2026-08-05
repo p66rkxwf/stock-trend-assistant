@@ -104,6 +104,17 @@ function Card({ title, children, className = "", action }: {
   );
 }
 
+/** 分組標題帶：帶出「區塊 ＞ 卡片標題」的層級。左 accent 短條＋右細分隔線。 */
+function SectionHeading({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+  return (
+    <div className={`mb-4 flex items-center gap-3 ${className}`}>
+      <span className="h-4 w-1 rounded-full bg-accent" />
+      <h2 className="text-sm font-semibold tracking-tight text-ink">{children}</h2>
+      <span className="h-px flex-1 bg-border" />
+    </div>
+  );
+}
+
 export default function Home() {
   const [stocks, setStocks] = useState<StockInfo[]>([]);
   const [ticker, setTicker] = useState("2330.TW");
@@ -191,6 +202,17 @@ export default function Home() {
         </div>
       )}
 
+      <SectionHeading>市場總覽</SectionHeading>
+
+      <div className="grid gap-5 md:grid-cols-2">
+        {market && <div className="animate-fadeup"><MarketCard market={market} /></div>}
+        <Card title="熱門標的預測總覽" className="animate-fadeup">
+          <WatchlistSignals stocks={stocks} selected={ticker} onSelect={setTicker} />
+        </Card>
+      </div>
+
+      <SectionHeading className="mt-8">個股判斷</SectionHeading>
+
       <div className="grid gap-5 lg:grid-cols-[2fr_1fr]">
         <Card
           className="animate-fadeup"
@@ -242,30 +264,30 @@ export default function Home() {
         </aside>
       </div>
 
-      <div className="mt-5 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
-        <Card title="熱門標的預測總覽" className="animate-fadeup md:col-span-2 lg:col-span-1">
-          <WatchlistSignals stocks={stocks} selected={ticker} onSelect={setTicker} />
-        </Card>
+      <div className="mt-5 grid gap-5 md:grid-cols-2">
         {indicators && <div className="animate-fadeup"><IndicatorPanel indicators={indicators} /></div>}
-        {market && <div className="animate-fadeup"><MarketCard market={market} /></div>}
         <div className="animate-fadeup"><SentimentCard twTicker={ticker} /></div>
       </div>
 
-      <div className="mt-5 animate-fadeup">
-        <TrackRecordCard ticker={ticker} records={history} trackRecord={trackRecord} />
-      </div>
+      <SectionHeading className="mt-8">模型實證</SectionHeading>
 
-      <div className="mt-5 animate-fadeup">
-        <HistoryReplayCard ticker={ticker} />
-      </div>
-
-      {modelInfo && !modelInfo.is_mock && (
-        <div className="mt-5 flex flex-wrap items-center justify-center gap-x-6 gap-y-1 rounded-xl border border-border bg-surface-2 px-4 py-2.5 text-[11px] text-ink-3">
-          <span>模型版本 {modelInfo.model_version}</span>
-          {modelInfo.test_auc != null && <span>測試集 Macro AUC {modelInfo.test_auc.toFixed(4)}</span>}
-          <span>決策規則：方向訊號信心未達門檻時轉為觀望（驗證期校準）</span>
+      <div className="space-y-5">
+        <div className="animate-fadeup">
+          <TrackRecordCard ticker={ticker} records={history} trackRecord={trackRecord} />
         </div>
-      )}
+
+        <div className="animate-fadeup">
+          <HistoryReplayCard ticker={ticker} />
+        </div>
+
+        {modelInfo && !modelInfo.is_mock && (
+          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-1 rounded-xl border border-border bg-surface-2 px-4 py-2.5 text-[11px] text-ink-3">
+            <span>模型版本 {modelInfo.model_version}</span>
+            {modelInfo.test_auc != null && <span>測試集 Macro AUC {modelInfo.test_auc.toFixed(4)}</span>}
+            <span>決策規則：方向訊號信心未達門檻時轉為觀望（驗證期校準）</span>
+          </div>
+        )}
+      </div>
 
       <footer className="mt-8 text-center text-xs text-ink-3">
         彰師大 115 年百萬專題探索 — 基於深度學習之股價趨勢預測與投資助理系統
