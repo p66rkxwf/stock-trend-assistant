@@ -9,8 +9,13 @@ if "%~1"=="scheduled" (
   echo ===== %date% %time% ===== >> "%~dp0logs\daily_predict.log"
   .venv\Scripts\python.exe -m stockta.ml.record_predictions >> "%~dp0logs\daily_predict.log" 2>&1
   .venv\Scripts\python.exe -m stockta.ml.report_predictions >> "%~dp0logs\daily_predict.log" 2>&1
+  rem Cross-sectional relative-strength online track (Rank IC): record live scores + refresh report.
+  .venv\Scripts\python.exe -m stockta.ml.record_rank_predictions >> "%~dp0logs\daily_predict.log" 2>&1
+  .venv\Scripts\python.exe -m stockta.ml.report_rank_predictions >> "%~dp0logs\daily_predict.log" 2>&1
 ) else (
   .venv\Scripts\python.exe -m stockta.ml.record_predictions
   .venv\Scripts\python.exe -m stockta.ml.report_predictions
+  .venv\Scripts\python.exe -m stockta.ml.record_rank_predictions
+  .venv\Scripts\python.exe -m stockta.ml.report_rank_predictions
   pause
 )
