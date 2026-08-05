@@ -84,35 +84,45 @@ export default function ScanPage() {
 
   return (
     <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">
-      <header className="mb-6 flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-bold tracking-tight sm:text-2xl">全池掃描</h1>
-          <p className="mt-0.5 text-sm text-ink-3">
-            {mode === "signal" ? "台灣 50 全池模型訊號總覽" : "相對強弱排序（cross-sectional）"}
-          </p>
+      <header className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-accent text-accent-fg shadow-(--shadow-md)">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 3v18h18" />
+              <path d="M19 9l-5 5-4-4-3 3" />
+            </svg>
+          </div>
+          <div>
+            <h1 className="text-xl font-bold tracking-tight sm:text-2xl">台股趨勢預測助理</h1>
+            <p className="mt-0.5 text-sm text-ink-3">
+              全池掃描 · {mode === "signal" ? "台灣 50 全池模型訊號總覽" : "相對強弱排序（cross-sectional）"}
+            </p>
+          </div>
         </div>
         <div className="flex items-center gap-2">
-          <div className="flex gap-1 rounded-lg bg-surface-2 p-1">
-            {(["signal", "rank"] as Mode[]).map((m) => (
-              <button
-                key={m}
-                type="button"
-                onClick={() => setMode(m)}
-                className="rounded-md px-3 py-1.5 text-sm font-medium transition"
-                style={
-                  mode === m
-                    ? { background: "var(--surface)", color: "var(--ink)", boxShadow: "var(--shadow-sm)" }
-                    : { color: "var(--ink-3)" }
-                }
-              >
-                {m === "signal" ? "訊號" : "相對強弱排名"}
-              </button>
-            ))}
-          </div>
           <NavTabs current="scan" />
           <ThemeToggle />
         </div>
       </header>
+
+      {/* 檢視模式切換（自頂部移入內容區，避免與導覽鈕擠在一起）：訊號總覽 vs 相對強弱排序 */}
+      <div className="mb-5 flex w-fit gap-1 rounded-lg bg-surface-2 p-1">
+        {(["signal", "rank"] as Mode[]).map((m) => (
+          <button
+            key={m}
+            type="button"
+            onClick={() => setMode(m)}
+            className="rounded-md px-3 py-1.5 text-sm font-medium transition"
+            style={
+              mode === m
+                ? { background: "var(--surface)", color: "var(--ink)", boxShadow: "var(--shadow-sm)" }
+                : { color: "var(--ink-3)" }
+            }
+          >
+            {m === "signal" ? "訊號" : "相對強弱排名"}
+          </button>
+        ))}
+      </div>
 
       {mode === "rank" && <RankView />}
 
