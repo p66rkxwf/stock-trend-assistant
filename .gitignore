@@ -27,3 +27,4 @@ logs/
 
 # walk-forward 重訓前的舊模型備份(權重不進版控)
 backend/artifacts_backup_2022split/
+backend/artifacts_backup_2024split/
