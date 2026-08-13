@@ -55,6 +55,11 @@ MARKET_INDEX_TICKER = "^TWII"
 # 市場寬度（上漲家數比）當日有資料的成分股少於此數即視為不可信（NaN）
 BREADTH_MIN_TICKERS = 30
 
+# 市場狀態（regime）特徵開關（實驗 #9）：開啟後 context 由 6 欄增為 10 欄、
+# 總特徵由 25 欄增為 29 欄。**切換此旗標必須重訓**——既有 artifact 的特徵契約
+# 記錄的是舊欄位清單，不重訓就會在載入時被 registry 擋下（這是刻意的）。
+MARKET_INCLUDE_REGIME = False
+
 WINDOW_LENGTH_DAYS = 60
 # EMA 類指標（RSI/MACD/KD）的值受序列起點影響，需足夠長的暖機期收斂後
 # 推論（短序列）與訓練（全序列）的特徵才會一致；120 個交易日可讓 EMA(26)
@@ -71,8 +76,12 @@ LABEL_CLASSES = ["跌", "觀望", "漲"]
 # 2026-07-17 walk-forward 重訓：原切分（train≤2022、val=2023）的模型到 2026 年
 # 命中率明顯下滑（市場漂移），故將切分前移兩年重訓全部模型；舊 artifact 備份於
 # backend/artifacts_backup_2022split/
-SPLIT_TRAIN_END = "2024-12-31"
-SPLIT_VAL_END = "2025-12-31"
+# 2026-08-14 實驗 #9 再次前移：4 折 walk-forward 證實「凍結不重訓」的代價會隨時間放大——
+# 最新半年（F4）重訓 45.2% vs 凍結 39.1%、喊跌精度 45.3% vs 28.4%。切分改採 F4 設定，
+# 舊 artifact 備份於 backend/artifacts_backup_2024split/。**此後需定期重訓**（見
+# docs/experiment_walkforward.md 的重訓節奏建議）。
+SPLIT_TRAIN_END = "2025-06-30"
+SPLIT_VAL_END = "2026-06-30"
 
 # 訓練資料回溯年數。2026-07-18 由 10 年延長為 20 年：#5 延伸實驗顯示 19 年資料
 # 在兩種子×兩架構共 6 組測試中，驗證期校準後命中率一致優於 8.5 年（+1.4~1.9pp）；
@@ -92,7 +101,10 @@ HISTORY_YEARS = 20
 #   （AUC 0.6706/0.6699、校準後 53.23%/53.25%，皆過 52.6% 門檻）；
 #   測試期最終驗證 gru 退步（45.1%）、lstm 持平（47.6%）→ 依「不部署最終驗證
 #   退步的模型」選 lstm。此為測試結果的防守性使用，已於 experiment_log #5 揭露
-PRODUCTION_MODEL = "lstm"
+# 2026-08-14(#9) 切分前移重訓五模型：驗證期 Macro AUC gru 0.6712 > lstm 0.6684
+#   > tcn 0.6680 > xgb 0.6629 > rf 0.6567，領先幅度與 #4 選 gru 時同量級，
+#   且測試期最終驗證 gru 亦居首（0.6334）→ 選 gru，無需動用平手裁決規則
+PRODUCTION_MODEL = "gru"
 
 # === Cross-sectional 相對強弱排序（experiment_log #8；與上方 3 類絕對方向管線並存）===
 # 標籤＝未來 LABEL_HORIZON_DAYS 日報酬是否贏過「當日全池中位數」（二分類，設計上約 50%）。
@@ -104,10 +116,10 @@ CS_HOLDING_DAYS_CANDIDATES = (5, 10, 20)  # 掃描換股週期，以驗證期淨
 CS_COST_BPS = 58.5
 
 # 方向訊號信心門檻：信心低於門檻的方向訊號一律降級為「觀望」——少喊、喊得準。
-# 門檻僅以驗證期（2025）整體命中率網格搜尋選出（2026-07-18 對 20 年版 lstm 校準）。
-# 加入市場情境特徵後 argmax 已大致平衡，門檻的角色從「救援」變成「保守化微調」。
+# 門檻僅以驗證期整體命中率網格搜尋選出（2026-08-14 對切分前移後的 gru 重新校準，
+# 驗證期 2025-06-30~2026-06-30 共 11,656 筆：原始 48.3% → 校準後 50.8%）。
 # 重新訓練或更換模型後，需執行 python -m stockta.ml.calibrate 重新校準本設定。
-SIGNAL_CONFIDENCE_THRESHOLDS: dict[str, float] = {"跌": 0.45, "漲": 0.42}
+SIGNAL_CONFIDENCE_THRESHOLDS: dict[str, float] = {"跌": 0.42, "漲": 0.38}
 
 # 風險等級以近 N 日報酬的年化波動率計算
 RISK_WINDOW_DAYS = 60

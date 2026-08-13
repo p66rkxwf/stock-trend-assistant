@@ -1,6 +1,6 @@
 {
   "model_name": "gru",
-  "trained_at": "2026-07-18T02:04:53+00:00",
+  "trained_at": "2026-08-13T17:52:19+00:00",
   "feature_columns": [
     "ret_1d",
     "ret_5d",
@@ -38,72 +38,72 @@
   "label_up_threshold": 0.02,
   "label_down_threshold": -0.02,
   "auto_adjust": true,
-  "git_commit": "b424663",
+  "git_commit": "16e27a8",
   "metrics": {
     "val": {
-      "n_samples": 5698,
-      "accuracy": 0.49455949455949455,
-      "macro_f1": 0.46737413040668313,
-      "macro_auc": 0.6699328126521675,
+      "n_samples": 5712,
+      "accuracy": 0.4802170868347339,
+      "macro_f1": 0.45807448941290224,
+      "macro_auc": 0.6712428631979366,
       "majority_class": "觀望",
-      "majority_baseline_accuracy": 0.49297999297999295,
+      "majority_baseline_accuracy": 0.436624649859944,
       "confusion_matrix": [
         [
-          560,
-          332,
-          401
-        ],
-        [
-          617,
-          1592,
-          600
-        ],
-        [
-          487,
-          443,
-          666
-        ]
-      ],
-      "label_distribution": {
-        "跌": 1293,
-        "觀望": 2809,
-        "漲": 1596
-      }
-    },
-    "test": {
-      "n_samples": 3006,
-      "accuracy": 0.45209580838323354,
-      "macro_f1": 0.4505819308810446,
-      "macro_auc": 0.6540643923448863,
-      "majority_class": "觀望",
-      "majority_baseline_accuracy": 0.38323353293413176,
-      "confusion_matrix": [
-        [
-          376,
-          157,
-          204
-        ],
-        [
-          376,
-          547,
-          229
+          539,
+          358,
+          399
         ],
         [
           462,
-          219,
-          436
+          1484,
+          548
+        ],
+        [
+          652,
+          550,
+          720
         ]
       ],
       "label_distribution": {
-        "跌": 737,
-        "觀望": 1152,
-        "漲": 1117
+        "跌": 1296,
+        "觀望": 2494,
+        "漲": 1922
       }
     },
-    "train_seconds": 14.4
+    "test": {
+      "n_samples": 619,
+      "accuracy": 0.3974151857835218,
+      "macro_f1": 0.3698784173167475,
+      "macro_auc": 0.6333990126612533,
+      "majority_class": "漲",
+      "majority_baseline_accuracy": 0.38287560581583197,
+      "confusion_matrix": [
+        [
+          70,
+          12,
+          93
+        ],
+        [
+          83,
+          36,
+          88
+        ],
+        [
+          80,
+          17,
+          140
+        ]
+      ],
+      "label_distribution": {
+        "跌": 175,
+        "觀望": 207,
+        "漲": 237
+      }
+    },
+    "train_seconds": 7.4
   },
   "stride": 2,
-  "n_train": 103165,
+  "n_train": 105596,
   "tickers": [
     "1101.TW",
     "1216.TW",
@@ -158,248 +158,10 @@
   "hyperparams": {
     "hidden_size": 64,
     "num_layers": 1,
-    "dropout": 0.4,
-    "lr": 0.0003,
+    "dropout": 0.2,
+    "lr": 0.001,
     "batch_size": 256,
     "max_epochs": 100,
     "patience": 5
-  },
-  "tuned": true,
-  "tuning_grid": {
-    "hidden_size": [
-      32,
-      64,
-      128
-    ],
-    "num_layers": [
-      1,
-      2
-    ],
-    "lr": [
-      0.001,
-      0.0003
-    ],
-    "dropout": [
-      0.2,
-      0.4
-    ]
-  },
-  "tuning_results": [
-    {
-      "hidden_size": 32,
-      "num_layers": 1,
-      "lr": 0.001,
-      "dropout": 0.2,
-      "val_macro_auc": 0.6673393717556481,
-      "epochs": 11,
-      "seconds": 12.0
-    },
-    {
-      "hidden_size": 32,
-      "num_layers": 1,
-      "lr": 0.001,
-      "dropout": 0.4,
-      "val_macro_auc": 0.6678158704488517,
-      "epochs": 11,
-      "seconds": 9.9
-    },
-    {
-      "hidden_size": 32,
-      "num_layers": 1,
-      "lr": 0.0003,
-      "dropout": 0.2,
-      "val_macro_auc": 0.6633871981829317,
-      "epochs": 10,
-      "seconds": 9.5
-    },
-    {
-      "hidden_size": 32,
-      "num_layers": 1,
-      "lr": 0.0003,
-      "dropout": 0.4,
-      "val_macro_auc": 0.6638343670910781,
-      "epochs": 10,
-      "seconds": 9.1
-    },
-    {
-      "hidden_size": 32,
-      "num_layers": 2,
-      "lr": 0.001,
-      "dropout": 0.2,
-      "val_macro_auc": 0.6664819973808807,
-      "epochs": 7,
-      "seconds": 6.9
-    },
-    {
-      "hidden_size": 32,
-      "num_layers": 2,
-      "lr": 0.001,
-      "dropout": 0.4,
-      "val_macro_auc": 0.6669817484751102,
-      "epochs": 7,
-      "seconds": 7.2
-    },
-    {
-      "hidden_size": 32,
-      "num_layers": 2,
-      "lr": 0.0003,
-      "dropout": 0.2,
-      "val_macro_auc": 0.6655015154786504,
-      "epochs": 10,
-      "seconds": 10.3
-    },
-    {
-      "hidden_size": 32,
-      "num_layers": 2,
-      "lr": 0.0003,
-      "dropout": 0.4,
-      "val_macro_auc": 0.6668686502090747,
-      "epochs": 10,
-      "seconds": 10.3
-    },
-    {
-      "hidden_size": 64,
-      "num_layers": 1,
-      "lr": 0.001,
-      "dropout": 0.2,
-      "val_macro_auc": 0.6668769612832451,
-      "epochs": 9,
-      "seconds": 8.1
-    },
-    {
-      "hidden_size": 64,
-      "num_layers": 1,
-      "lr": 0.001,
-      "dropout": 0.4,
-      "val_macro_auc": 0.6683379139168562,
-      "epochs": 9,
-      "seconds": 8.5
-    },
-    {
-      "hidden_size": 64,
-      "num_layers": 1,
-      "lr": 0.0003,
-      "dropout": 0.2,
-      "val_macro_auc": 0.6662709540918228,
-      "epochs": 10,
-      "seconds": 9.4
-    },
-    {
-      "hidden_size": 64,
-      "num_layers": 1,
-      "lr": 0.0003,
-      "dropout": 0.4,
-      "val_macro_auc": 0.6699328126521675,
-      "epochs": 16,
-      "seconds": 14.4
-    },
-    {
-      "hidden_size": 64,
-      "num_layers": 2,
-      "lr": 0.001,
-      "dropout": 0.2,
-      "val_macro_auc": 0.6667767505664225,
-      "epochs": 7,
-      "seconds": 7.3
-    },
-    {
-      "hidden_size": 64,
-      "num_layers": 2,
-      "lr": 0.001,
-      "dropout": 0.4,
-      "val_macro_auc": 0.6678398384974157,
-      "epochs": 7,
-      "seconds": 7.6
-    },
-    {
-      "hidden_size": 64,
-      "num_layers": 2,
-      "lr": 0.0003,
-      "dropout": 0.2,
-      "val_macro_auc": 0.6658710332113346,
-      "epochs": 7,
-      "seconds": 7.4
-    },
-    {
-      "hidden_size": 64,
-      "num_layers": 2,
-      "lr": 0.0003,
-      "dropout": 0.4,
-      "val_macro_auc": 0.6657464673414736,
-      "epochs": 7,
-      "seconds": 7.2
-    },
-    {
-      "hidden_size": 128,
-      "num_layers": 1,
-      "lr": 0.001,
-      "dropout": 0.2,
-      "val_macro_auc": 0.6644345948176923,
-      "epochs": 6,
-      "seconds": 5.9
-    },
-    {
-      "hidden_size": 128,
-      "num_layers": 1,
-      "lr": 0.001,
-      "dropout": 0.4,
-      "val_macro_auc": 0.6679436014864818,
-      "epochs": 7,
-      "seconds": 7.1
-    },
-    {
-      "hidden_size": 128,
-      "num_layers": 1,
-      "lr": 0.0003,
-      "dropout": 0.2,
-      "val_macro_auc": 0.6673539228420787,
-      "epochs": 7,
-      "seconds": 6.9
-    },
-    {
-      "hidden_size": 128,
-      "num_layers": 1,
-      "lr": 0.0003,
-      "dropout": 0.4,
-      "val_macro_auc": 0.6617796799699143,
-      "epochs": 10,
-      "seconds": 9.8
-    },
-    {
-      "hidden_size": 128,
-      "num_layers": 2,
-      "lr": 0.001,
-      "dropout": 0.2,
-      "val_macro_auc": 0.6673260238882235,
-      "epochs": 7,
-      "seconds": 8.8
-    },
-    {
-      "hidden_size": 128,
-      "num_layers": 2,
-      "lr": 0.001,
-      "dropout": 0.4,
-      "val_macro_auc": 0.6697287327626863,
-      "epochs": 7,
-      "seconds": 8.5
-    },
-    {
-      "hidden_size": 128,
-      "num_layers": 2,
-      "lr": 0.0003,
-      "dropout": 0.2,
-      "val_macro_auc": 0.665496742816583,
-      "epochs": 7,
-      "seconds": 8.7
-    },
-    {
-      "hidden_size": 128,
-      "num_layers": 2,
-      "lr": 0.0003,
-      "dropout": 0.4,
-      "val_macro_auc": 0.6646014277393505,
-      "epochs": 7,
-      "seconds": 8.6
-    }
-  ]
+  }
 }
