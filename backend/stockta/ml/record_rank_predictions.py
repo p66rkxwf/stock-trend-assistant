@@ -24,6 +24,7 @@ from stockta.config import (
     CS_PRODUCTION_MODEL,
     DATA_CACHE_DIR,
     INDICATOR_WARMUP_DAYS,
+    LABEL_HORIZON_DAYS,
     MARKET_INDEX_TICKER,
     PREDICTIONS_DB_PATH,
     STOCK_POOL,
@@ -42,8 +43,22 @@ from stockta.ml.report_rank_predictions import cs_production_version
 _CONTEXT_EXTRA_DAYS = 60
 
 
-def run_live(store: RankPredictionStore, model, scaler, version: str) -> int:
-    """以最後一個已完成交易日為基準日，即時評分全池並記錄（source=live）。"""
+def _recorded_rank_base_dates(db_path, version: str) -> set[str]:
+    """該版本已記錄過的 rank 基準日集合（供冪等自癒：跳過已補上的日子）。"""
+    conn = sqlite3.connect(db_path)
+    try:
+        rows = conn.execute(
+            "SELECT DISTINCT base_date FROM rank_predictions WHERE model_version=?", (version,)
+        ).fetchall()
+    except sqlite3.OperationalError:
+        rows = []
+    conn.close()
+    return {r[0] for r in rows}
+
+
+def run_live(store: RankPredictionStore, model, scaler, version: str, days: int) -> int:
+    """即時評分全池並記錄最近 N 個交易日（冪等自癒漏記）。當日最新交易日記 source=live，
+    因資料延遲而回補的較舊交易日記 source=pit（分數對固定權重逐位元一致，僅記錄時點不同）。"""
     provider = YFinanceProvider(cache=ParquetCache(DATA_CACHE_DIR), auto_adjust=AUTO_ADJUST)
     end = last_completed_trading_day()
     lookback = calendar_lookback_days(WINDOW_LENGTH_DAYS, INDICATOR_WARMUP_DAYS)
@@ -62,16 +77,32 @@ def run_live(store: RankPredictionStore, model, scaler, version: str) -> int:
         return 1
     context = build_market_context(market, pool_ohlcv)
 
-    n = 0
-    for ticker, df in pool_ohlcv.items():
-        r = score_asof(model, scaler, df, context, None)
-        if r is None:
+    recent_days = list(context.index[-days:])
+    newest = recent_days[-1] if recent_days else None
+    already = _recorded_rank_base_dates(PREDICTIONS_DB_PATH, version)
+    covered: list[str] = []
+    total = 0
+    for as_of in recent_days:
+        if as_of.date().isoformat() in already:
             continue
-        score, base_date = r
-        store.record(ticker, base_date, score, version, source="live")
-        n += 1
-    print(f"live：記錄 {n} 檔，累計 {store.count()} 筆 rank_predictions（{version}）")
-    return 0 if n else 1
+        src = "live" if as_of == newest else "pit"
+        day_ok = 0
+        for ticker, df in pool_ohlcv.items():
+            r = score_asof(model, scaler, df, context, as_of)
+            if r is None:
+                continue
+            score, base_date = r
+            store.record(ticker, base_date, score, version, source=src)
+            day_ok += 1
+        if day_ok:
+            covered.append(f"{as_of.date()}({src})")
+            total += day_ok
+            print(f"  {as_of.date()} [{src}]: {day_ok} 檔")
+    if covered:
+        print(f"live：新記錄 {'、'.join(covered)}（{total} 筆），累計 {store.count()} 筆 rank_predictions（{version}）")
+    else:
+        print(f"live：最近 {days} 交易日皆已記錄、無新增；累計 {store.count()} 筆 rank_predictions（{version}）")
+    return 0
 
 
 def run_backfill(store: RankPredictionStore, model, scaler, version: str) -> int:
@@ -116,7 +147,11 @@ def run_backfill(store: RankPredictionStore, model, scaler, version: str) -> int
 def main() -> int:
     parser = argparse.ArgumentParser(description="批次記錄線上相對強弱分數")
     sub = parser.add_subparsers(dest="cmd")
-    sub.add_parser("live", help="以最後一個已完成交易日即時評分並記錄（預設）")
+    p_live = sub.add_parser("live", help="即時評分並記錄最近 N 交易日（冪等自癒；預設）")
+    p_live.add_argument(
+        "--days", type=int, default=LABEL_HORIZON_DAYS,
+        help="回補最近 N 個交易日（冪等自癒漏記；預設=標籤天數，回補日結果尚未實現、無前視）",
+    )
     sub.add_parser("backfill", help="point-in-time 重建既有絕對預測相同的歷史基準日")
     args = parser.parse_args()
 
@@ -125,7 +160,7 @@ def main() -> int:
     store = RankPredictionStore(PREDICTIONS_DB_PATH)
     if args.cmd == "backfill":
         return run_backfill(store, model, scaler, version)
-    return run_live(store, model, scaler, version)
+    return run_live(store, model, scaler, version, getattr(args, "days", LABEL_HORIZON_DAYS))
 
 
 if __name__ == "__main__":

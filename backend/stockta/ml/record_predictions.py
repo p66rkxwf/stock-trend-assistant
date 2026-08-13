@@ -12,12 +12,14 @@
 from __future__ import annotations
 
 import argparse
+import sqlite3
 from datetime import timedelta
 
 from stockta.config import (
     AUTO_ADJUST,
     DATA_CACHE_DIR,
     INDICATOR_WARMUP_DAYS,
+    LABEL_HORIZON_DAYS,
     MARKET_INDEX_TICKER,
     PREDICTIONS_DB_PATH,
     PRODUCTION_MODEL,
@@ -35,17 +37,36 @@ from stockta.inference.store import PredictionStore
 _CONTEXT_EXTRA_DAYS = 60
 
 
+def _recorded_base_dates(db_path, version: str) -> set[str]:
+    """該版本已記錄過的基準日集合（供冪等自癒：跳過已補上的日子、省去重算）。"""
+    conn = sqlite3.connect(db_path)
+    try:
+        rows = conn.execute(
+            "SELECT DISTINCT base_date FROM predictions WHERE model_version=?", (version,)
+        ).fetchall()
+    except sqlite3.OperationalError:
+        rows = []
+    conn.close()
+    return {r[0] for r in rows}
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="批次記錄線上預測")
     parser.add_argument(
         "--tickers", nargs="+", default=list(STOCK_POOL), help="預設為股票池全部標的"
+    )
+    parser.add_argument(
+        "--days", type=int, default=LABEL_HORIZON_DAYS,
+        help="回補最近 N 個交易日（冪等自癒；預設=標籤天數）。資料商當日 K 線未及時到位時，"
+        "當次會記到較舊日、隔日跑再補回；視窗 ≤ 標籤天數確保回補日的 N 日結果尚未實現，"
+        "故無前視、fill 規則與結果無關亦無選擇偏誤。",
     )
     args = parser.parse_args()
 
     provider = YFinanceProvider(cache=ParquetCache(DATA_CACHE_DIR), auto_adjust=AUTO_ADJUST)
     predictor = Predictor.from_registry(PRODUCTION_MODEL)
     store = PredictionStore(PREDICTIONS_DB_PATH)
-    print(f"模型：{predictor.version}；標的 {len(args.tickers)} 檔")
+    print(f"模型：{predictor.version}；標的 {len(args.tickers)} 檔；回補視窗 {args.days} 交易日")
 
     end = last_completed_trading_day()
     lookback = calendar_lookback_days(WINDOW_LENGTH_DAYS, INDICATOR_WARMUP_DAYS)
@@ -67,22 +88,38 @@ def main() -> int:
         return 1
     context = build_market_context(market, pool_ohlcv)
 
-    n_ok = 0
-    for ticker in args.tickers:
-        df = pool_ohlcv.get(ticker)
-        if df is None:
+    # 最近 N 個交易日（以市場情境索引為交易日曆），跳過已記錄者→自癒漏記、避免每次重算
+    recent_days = list(context.index[-args.days:])
+    already = _recorded_base_dates(PREDICTIONS_DB_PATH, predictor.version)
+    covered: list[str] = []
+    n_records = 0
+    for as_of in recent_days:
+        if as_of.date().isoformat() in already:
             continue
-        try:
-            pred = predictor.predict(df.loc[df.index >= str(start)], context)
-        except InsufficientDataError as exc:
-            print(f"[略過] {ticker}: {exc}")
-            continue
-        store.record(ticker, pred.base_date, pred.signal, pred.confidence, predictor.version)
-        print(f"  {ticker} {STOCK_POOL.get(ticker, '')}: {pred.base_date} {pred.signal} ({pred.confidence:.2f})")
-        n_ok += 1
+        day_ok = 0
+        for ticker in args.tickers:
+            df = pool_ohlcv.get(ticker)
+            if df is None:
+                continue
+            sub = df.loc[(df.index >= str(start)) & (df.index <= as_of)]
+            if sub.empty:
+                continue
+            try:
+                pred = predictor.predict(sub, context)
+            except InsufficientDataError:
+                continue
+            store.record(ticker, pred.base_date, pred.signal, pred.confidence, predictor.version)
+            day_ok += 1
+        if day_ok:
+            covered.append(as_of.date().isoformat())
+            n_records += day_ok
+            print(f"  {as_of.date()}: 記錄 {day_ok} 檔")
 
-    print(f"完成 {n_ok}/{len(args.tickers)} 檔，累計 {store.count()} 筆（predictions.db）")
-    return 0 if n_ok else 1
+    if covered:
+        print(f"完成：新記錄基準日 {'、'.join(covered)}（{n_records} 筆），累計 {store.count()} 筆（predictions.db）")
+    else:
+        print(f"完成：最近 {args.days} 交易日皆已記錄、無新增；累計 {store.count()} 筆（predictions.db）")
+    return 0
 
 
 if __name__ == "__main__":
