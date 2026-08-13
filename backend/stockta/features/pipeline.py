@@ -13,10 +13,10 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from stockta.features.market import MARKET_CONTEXT_COLUMNS
+from stockta.features.market import ALL_CONTEXT_COLUMNS, MARKET_CONTEXT_COLUMNS
 
-# 特徵欄位的唯一順序 —— artifact metadata 記錄此清單，API 啟動時比對，不一致拒絕載入
-FEATURE_COLUMNS = [
+# 個股自身的特徵欄位（與 context 無關）
+STOCK_FEATURE_COLUMNS = [
     "ret_1d",
     "ret_5d",
     "close_ma5",
@@ -34,10 +34,29 @@ FEATURE_COLUMNS = [
     "vol_ratio",
     "vol_chg",
     "hl_range",
+]
+
+# 相對大盤（需要 context 才算得出來）
+RELATIVE_FEATURE_COLUMNS = ["rel_ret_1d", "rel_ret_5d"]
+
+
+def feature_columns_for(context: pd.DataFrame) -> list[str]:
+    """依 context 實際帶了哪些欄位決定特徵順序。
+
+    實驗 #9 要做「有無 regime 欄位」的成對消融，兩種 context 都必須跑得動；
+    欄位順序仍由 market.MARKET_CONTEXT_COLUMNS 的宣告順序決定（非 DataFrame 欄序），
+    避免 context 建構方式改變時特徵順序悄悄改變。
+    """
+    present = [c for c in ALL_CONTEXT_COLUMNS if c in context.columns]
+    return [*STOCK_FEATURE_COLUMNS, *present, *RELATIVE_FEATURE_COLUMNS]
+
+
+# 特徵欄位的唯一順序 —— artifact metadata 記錄此清單，API 啟動時比對，不一致拒絕載入
+FEATURE_COLUMNS = [
+    *STOCK_FEATURE_COLUMNS,
     # 市場情境（features/market.py 的 context 欄位 + 個股相對大盤）
     *MARKET_CONTEXT_COLUMNS,
-    "rel_ret_1d",
-    "rel_ret_5d",
+    *RELATIVE_FEATURE_COLUMNS,
 ]
 
 
@@ -89,12 +108,14 @@ def build_features(ohlcv: pd.DataFrame, context: pd.DataFrame) -> pd.DataFrame:
 
     # 市場情境：以個股交易日對齊 context（個股停牌日自然缺列、隨 dropna 丟棄）
     ctx = context.reindex(out.index)
-    for col in MARKET_CONTEXT_COLUMNS:
-        out[col] = ctx[col]
+    columns = feature_columns_for(context)
+    for col in columns:
+        if col in ctx.columns:
+            out[col] = ctx[col]
     out["rel_ret_1d"] = out["ret_1d"] - ctx["mkt_ret_1d"]
     out["rel_ret_5d"] = out["ret_5d"] - ctx["mkt_ret_5d"]
 
-    return out[FEATURE_COLUMNS].dropna()
+    return out[columns].dropna()
 
 
 def _rsi(close: pd.Series, period: int) -> pd.Series:

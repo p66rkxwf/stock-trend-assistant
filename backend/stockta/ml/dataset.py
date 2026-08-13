@@ -35,6 +35,9 @@ class Dataset:
     X_test: np.ndarray
     y_test: np.ndarray
     scaler: StandardScaler
+    # 測試樣本的基準日（視窗終點）；walk-forward 實驗要把同一個模型的測試期
+    # 再切成數個時間窗分別評估，沒有日期就辦不到。順序與 X_test 對齊。
+    dates_test: np.ndarray | None = None
 
 
 def build_dataset(
@@ -42,15 +45,22 @@ def build_dataset(
     context: pd.DataFrame,
     window: int = WINDOW_LENGTH_DAYS,
     stride: int = 1,
+    train_end: str | pd.Timestamp | None = None,
+    val_end: str | pd.Timestamp | None = None,
+    test_end: str | pd.Timestamp | None = None,
 ) -> Dataset:
     """由多檔股票的 OHLCV 與市場情境 context 建出訓練/驗證/測試集。
 
     context 由 features.market.build_market_context() 產生（大盤 + 寬度），
     全部股票共用同一份。stride > 1 時每隔 stride 個交易日取一個樣本
     （相鄰視窗重疊 59/60，子取樣可大幅降低訓練時間而幾乎不損失資訊量）。
+
+    train_end/val_end 預設取 config 的正式切分；walk-forward 實驗（#9）需要逐折
+    改變切分點，故開放覆寫。test_end 可再把測試期截在某日之前（折與折之間不重疊）。
     """
-    train_end = pd.Timestamp(SPLIT_TRAIN_END)
-    val_end = pd.Timestamp(SPLIT_VAL_END)
+    train_end = pd.Timestamp(train_end or SPLIT_TRAIN_END)
+    val_end = pd.Timestamp(val_end or SPLIT_VAL_END)
+    test_end_ts = pd.Timestamp(test_end) if test_end else None
 
     feats: list[tuple[pd.DataFrame, pd.Series]] = []
     for ohlcv in ohlcv_by_ticker.values():
@@ -63,7 +73,9 @@ def build_dataset(
     train_rows = pd.concat([f.loc[f.index <= train_end] for f, _ in feats])
     scaler = StandardScaler().fit(train_rows.to_numpy(dtype=np.float64))
 
-    parts: dict[str, list[np.ndarray]] = {k: [] for k in ("Xtr", "ytr", "Xva", "yva", "Xte", "yte")}
+    parts: dict[str, list[np.ndarray]] = {
+        k: [] for k in ("Xtr", "ytr", "Xva", "yva", "Xte", "yte", "dte")
+    }
     for f, labels in feats:
         if len(f) < window:
             continue
@@ -93,6 +105,13 @@ def build_dataset(
             & (label_dates <= np.datetime64(val_end, "ns"))
         )
         is_test = end_dates > val_end
+        if test_end_ts is not None:
+            # 測試期同樣套 embargo：標籤日超出測試期末端者剔除，折與折之間不重疊
+            is_test = (
+                is_test
+                & (end_dates <= test_end_ts)
+                & (label_dates <= np.datetime64(test_end_ts, "ns"))
+            )
 
         for x_key, y_key, mask in (
             ("Xtr", "ytr", np.asarray(is_train)),
@@ -103,6 +122,8 @@ def build_dataset(
             if m.any():
                 parts[x_key].append(windows[m])
                 parts[y_key].append(y[m])
+                if x_key == "Xte":
+                    parts["dte"].append(np.asarray(end_dates)[m])
 
     def stack(xs: list[np.ndarray], ys: list[np.ndarray]) -> tuple[np.ndarray, np.ndarray]:
         if not xs:
@@ -112,4 +133,7 @@ def build_dataset(
     X_train, y_train = stack(parts["Xtr"], parts["ytr"])
     X_val, y_val = stack(parts["Xva"], parts["yva"])
     X_test, y_test = stack(parts["Xte"], parts["yte"])
-    return Dataset(X_train, y_train, X_val, y_val, X_test, y_test, scaler)
+    dates_test = (
+        np.concatenate(parts["dte"]) if parts["dte"] else np.empty((0,), dtype="datetime64[ns]")
+    )
+    return Dataset(X_train, y_train, X_val, y_val, X_test, y_test, scaler, dates_test)

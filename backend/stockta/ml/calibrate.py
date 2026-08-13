@@ -35,6 +35,36 @@ from stockta.ml.backtest import collect_probas
 
 HOLD = 1  # LABEL_CLASSES.index("觀望")
 
+# 門檻網格：低於門檻的方向訊號降級為觀望
+THRESHOLD_GRID = np.arange(0.34, 0.72, 0.01)
+
+
+def apply_thresholds(proba: np.ndarray, down: float, up: float) -> np.ndarray:
+    """把機率轉成訊號：argmax 後，信心不足的「跌／漲」一律降級為「觀望」。
+
+    這是決策規則的唯一實作；predictor.resolve_signal 是它的單筆版本，
+    calibrate 與 walkforward 都必須走這裡，否則校準出來的門檻與線上行為不一致。
+    """
+    pred = proba.argmax(axis=1)
+    pred[(pred == 0) & (proba[:, 0] < down)] = HOLD
+    pred[(pred == 2) & (proba[:, 2] < up)] = HOLD
+    return pred
+
+
+def best_thresholds(
+    proba: np.ndarray, y: np.ndarray, grid: np.ndarray = THRESHOLD_GRID
+) -> tuple[float, float, float]:
+    """在給定機率上網格搜尋最佳（跌, 漲）門檻，回傳 (命中率, 跌門檻, 漲門檻)。
+
+    只能餵驗證期資料——用測試期挑門檻會產生樂觀偏差。
+    """
+    best = (-1.0, float(grid[0]), float(grid[0]))
+    for down, up in product(grid, grid):
+        acc = float((apply_thresholds(proba, down, up) == y).mean())
+        if acc > best[0]:
+            best = (acc, float(down), float(up))
+    return best
+
 
 def main() -> int:
     provider = YFinanceProvider(cache=ParquetCache(DATA_CACHE_DIR), auto_adjust=AUTO_ADJUST)
@@ -65,17 +95,7 @@ def main() -> int:
     y = np.concatenate(ys)
     print(f"驗證期樣本 {len(y):,} 筆")
 
-    grid = np.arange(0.34, 0.72, 0.01)
-    best = (-1.0, 0.0, 0.0)
-    for td, tu in product(grid, grid):
-        pred = proba.argmax(axis=1)
-        pred[(pred == 0) & (proba[:, 0] < td)] = HOLD
-        pred[(pred == 2) & (proba[:, 2] < tu)] = HOLD
-        acc = float((pred == y).mean())
-        if acc > best[0]:
-            best = (acc, td, tu)
-
-    acc, td, tu = best
+    acc, td, tu = best_thresholds(proba, y)
     raw_acc = float((proba.argmax(axis=1) == y).mean())
     print(f"原始 argmax 驗證期命中率 {raw_acc:.1%} → 校準後 {acc:.1%}")
     print(f'建議回填 config.py：SIGNAL_CONFIDENCE_THRESHOLDS = {{"跌": {td:.2f}, "漲": {tu:.2f}}}')

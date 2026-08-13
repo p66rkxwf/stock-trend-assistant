@@ -20,9 +20,12 @@ from stockta.config import (
 from stockta.data.cache import ParquetCache
 from stockta.data.calendar import calendar_lookback_days
 from stockta.data.provider import DataProvider, DataProviderError
-from stockta.features.market import build_market_context
+from stockta.features.market import MARKET_REGIME_WINDOW_DAYS, build_market_context
 
-# context 需涵蓋個股特徵的整段回溯，再加自身 rolling 暖機（20+5 日）的餘裕
+# context 需涵蓋個股特徵的整段回溯，再加自身 rolling 暖機的餘裕。
+# regime 欄位（MA200、一年回撤、波動百分位）的暖機遠長於短期情境的 20+5 日，
+# 回溯不夠時 build_market_context 的 dropna 會把整段 context 清空、推論直接失敗，
+# 故把 MARKET_REGIME_WINDOW_DAYS 明確算進暖機期（實驗 #9）。
 _CONTEXT_EXTRA_DAYS = 60
 
 
@@ -32,7 +35,10 @@ class MarketContextService:
         self._cache = cache
         self._pool = pool
         self._lookback_days = (
-            calendar_lookback_days(WINDOW_LENGTH_DAYS, INDICATOR_WARMUP_DAYS) + _CONTEXT_EXTRA_DAYS
+            calendar_lookback_days(
+                WINDOW_LENGTH_DAYS, INDICATOR_WARMUP_DAYS + MARKET_REGIME_WINDOW_DAYS
+            )
+            + _CONTEXT_EXTRA_DAYS
         )
         self._memo: dict[date, pd.DataFrame] = {}
 
