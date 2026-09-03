@@ -13,7 +13,11 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from stockta.features.market import ALL_CONTEXT_COLUMNS, MARKET_CONTEXT_COLUMNS
+from stockta.features.market import (
+    ALL_CONTEXT_COLUMNS,
+    CONTEXT_AVAILABILITY,
+    MARKET_CONTEXT_COLUMNS,
+)
 
 # 個股自身的特徵欄位（與 context 無關）
 STOCK_FEATURE_COLUMNS = [
@@ -38,6 +42,24 @@ STOCK_FEATURE_COLUMNS = [
 
 # 相對大盤（需要 context 才算得出來）
 RELATIVE_FEATURE_COLUMNS = ["rel_ret_1d", "rel_ret_5d"]
+
+# 每個特徵的「最早可用時間」＝(相對 t 的交易日位移, 還需要什麼到位)。
+# 位移一律 ≤ 0；標籤是 +LABEL_HORIZON_DAYS。定義與檢查見 features/availability.py
+# 與 tests/test_feature_availability.py——新增特徵而忘了標註會亮紅燈，這是刻意的。
+_STOCK_GATE = "該檔 t 日的收盤 K 線到位"
+STOCK_FEATURE_AVAILABILITY = {col: (0, _STOCK_GATE) for col in STOCK_FEATURE_COLUMNS}
+
+_RELATIVE_GATE = "該檔與 ^TWII 的 t 日收盤 K 線皆到位"
+RELATIVE_FEATURE_AVAILABILITY = {
+    col: (0, _RELATIVE_GATE) for col in RELATIVE_FEATURE_COLUMNS
+}
+
+# 全部特徵的可用時點（含尚未採用的 regime 欄位，與 ALL_CONTEXT_COLUMNS 對齊）
+FEATURE_AVAILABILITY = {
+    **STOCK_FEATURE_AVAILABILITY,
+    **CONTEXT_AVAILABILITY,
+    **RELATIVE_FEATURE_AVAILABILITY,
+}
 
 
 def feature_columns_for(context: pd.DataFrame) -> list[str]:

@@ -52,6 +52,24 @@ MARKET_CONTEXT_COLUMNS = [
 # 否則 rolling 尚無值、整段 context 會被 dropna 清空。inference/market_context.py 依此加長回溯。
 MARKET_REGIME_WINDOW_DAYS = 200
 
+# 每個 context 欄位的「最早可用時間」。新增欄位而忘了標註，
+# test_feature_availability.py 會紅燈——這是刻意的。
+# 定義與檢查見 features/availability.py。
+CONTEXT_AVAILABILITY = {
+    # 只需要 ^TWII 自己的日 K
+    "mkt_ret_1d": (0, "^TWII 的 t 日收盤 K 線到位"),
+    "mkt_ret_5d": (0, "^TWII 的 t 日收盤 K 線到位"),
+    "mkt_ma20": (0, "^TWII 的 t 日收盤 K 線到位"),
+    "mkt_vol20": (0, "^TWII 的 t 日收盤 K 線到位"),
+    "mkt_ma60": (0, "^TWII 的 t 日收盤 K 線到位"),
+    "mkt_ma200": (0, "^TWII 的 t 日收盤 K 線到位"),
+    "mkt_drawdown": (0, "^TWII 的 t 日收盤 K 線到位"),
+    "mkt_vol_pct": (0, "^TWII 的 t 日收盤 K 線到位"),
+    # 寬度要等**全池**——實務上這是當日最晚到位的特徵，決策時點由它決定
+    "breadth_up": (0, f"全池至少 {BREADTH_MIN_TICKERS} 檔的 t 日收盤 K 線到位"),
+    "breadth_ma5": (0, f"全池至少 {BREADTH_MIN_TICKERS} 檔的 t 日收盤 K 線到位"),
+}
+
 
 def build_market_context(
     market_ohlcv: pd.DataFrame,
