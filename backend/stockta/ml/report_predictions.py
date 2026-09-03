@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
-from collections import defaultdict
+from collections import Counter, defaultdict
 from datetime import date
 
 import pandas as pd
@@ -23,6 +23,7 @@ from stockta.config import (
     ARTIFACTS_DIR,
     BACKEND_ROOT,
     DATA_CACHE_DIR,
+    LABEL_CLASSES,
     LABEL_DOWN_THRESHOLD,
     LABEL_HORIZON_DAYS,
     LABEL_UP_THRESHOLD,
@@ -109,10 +110,33 @@ def main() -> None:
     ]
 
     if prod_matured:
-        lines.append(
+        # 命中率單看沒有意義：「觀望」與多頭段的「漲」都可能過半，全猜一類就有
+        # 不低的分數。多數類基線是這批線上樣本自己算出來的，才是該比的對手。
+        actual_counts = Counter(row[5] for row in prod_matured)
+        majority_label, majority_n = actual_counts.most_common(1)[0]
+        baseline = majority_n / len(prod_matured)
+        hit_rate = prod_hits / len(prod_matured)
+
+        lines += [
             f"## 總覽（現行模型）：已到期 {len(prod_matured)} 筆、命中 {prod_hits} 筆"
-            f"（{prod_hits / len(prod_matured):.1%}）；待驗證 {len(prod_pending)} 筆"
-        )
+            f"（**{hit_rate:.1%}**）；待驗證 {len(prod_pending)} 筆",
+            "",
+            f"**多數類基線 {baseline:.1%}**（全猜「{majority_label}」，{majority_n}/"
+            f"{len(prod_matured)}）→ 模型超出基線 **{hit_rate - baseline:+.1%}**。",
+            "",
+            "各訊號精度（喊了之後對的比例）：",
+            "",
+            "| 訊號 | 喊出次數 | 命中 | 精度 |",
+            "|---|---|---|---|",
+        ]
+        for signal in LABEL_CLASSES:
+            called = [row for row in prod_matured if row[3] == signal]
+            if not called:
+                continue
+            ok = sum(1 for row in called if row[7])
+            lines.append(
+                f"| {signal} | {len(called)} | {ok} | {ok / len(called):.1%} |"
+            )
     else:
         lines.append(
             f"## 總覽（現行模型）：已到期 0 筆（上線未滿 {LABEL_HORIZON_DAYS} 個交易日，尚無可驗證樣本）；"
