@@ -16,7 +16,12 @@ backend/artifacts/**/*.joblib
 backend/artifacts/**/*.pkl
 backend/artifacts_cs/**/*.joblib
 backend/artifacts_cs/**/*.pkl
-backend/data_cache/
+# parquet 快取本身太大不進版控，但 MANIFEST.json（內容雜湊與摘要）必須進——
+# 它是「這個數字是用哪一份資料跑出來的」唯一的答案。注意要寫成 data_cache/*
+# 而非 data_cache/：git 不會進入被忽略的**目錄**，寫成目錄的話下面那行的
+# 反向排除不會生效。
+backend/data_cache/*
+!backend/data_cache/MANIFEST.json
 backend/predictions.db
 
 # 環境變數

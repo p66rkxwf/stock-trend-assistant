@@ -58,6 +58,10 @@ def save(
         "label_down_threshold": LABEL_DOWN_THRESHOLD,
         "auto_adjust": AUTO_ADJUST,
         "git_commit": _git_commit(),
+        # 訓練當下的資料快照雜湊——git_commit 記的是「哪一版程式碼」，這個記的是
+        # 「哪一份資料」。yfinance 的還原股價會回頭改寫歷史，沒有這一欄就無法回答
+        # 「這個數字能不能重跑得到」。快取沒有 MANIFEST.json 時為 None（不擋訓練）。
+        "data_manifest_sha": _data_manifest_sha(),
         "metrics": metrics,
         **(extra or {}),
     }
@@ -96,6 +100,20 @@ def _check(metadata: dict[str, Any], key: str, expected: Any) -> None:
             f"  artifact: {actual!r}\n  程式碼:   {expected!r}\n"
             f"模型是用舊版特徵/設定訓練的，直接載入會默默輸出錯誤預測，請重新訓練。"
         )
+
+
+def _data_manifest_sha() -> str | None:
+    """訓練當下的資料快照雜湊；沒有 manifest 或讀取失敗時回 None。
+
+    刻意不因此擋下訓練：manifest 是可追溯性的加分項，不是訓練的前置條件，
+    在還沒 build 過 manifest 的機器上也應該訓練得起來。
+    """
+    try:
+        from stockta.data.manifest import current_sha
+
+        return current_sha()
+    except Exception:
+        return None
 
 
 def _git_commit() -> str | None:

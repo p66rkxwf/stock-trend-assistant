@@ -1,0 +1,463 @@
+{
+  "auto_adjust": true,
+  "files": {
+    "1101.TW": {
+      "first_close": 3.530248,
+      "first_date": "2004-01-01",
+      "last_close": 24.25,
+      "last_date": "2026-08-14",
+      "na_rows": 0,
+      "rows": 5576,
+      "sha256": "f5da44effea61cd9e6673cb1eb749b6bf9439418f2f99bb99ac638e75ad99f58"
+    },
+    "1216.TW": {
+      "first_close": 3.759184,
+      "first_date": "2004-01-01",
+      "last_close": 75.800003,
+      "last_date": "2026-08-14",
+      "na_rows": 0,
+      "rows": 5576,
+      "sha256": "e9b1396677f502dc0e2349728b7d0974cd8a1697b697da4a3a9d73c53587a2a7"
+    },
+    "1301.TW": {
+      "first_close": 13.938937,
+      "first_date": "2004-01-01",
+      "last_close": 60.0,
+      "last_date": "2026-08-14",
+      "na_rows": 0,
+      "rows": 5576,
+      "sha256": "139dc6459b9dc27ad0ed082b77c00ad59ce76b632413c763a8a271f17ec9df26"
+    },
+    "1303.TW": {
+      "first_close": 12.539159,
+      "first_date": "2004-01-01",
+      "last_close": 207.5,
+      "last_date": "2026-08-14",
+      "na_rows": 0,
+      "rows": 5576,
+      "sha256": "d97bf1d5a27426d6aae35722c248b6de0cdf1f4cb49453d30fdd40e960c57068"
+    },
+    "1326.TW": {
+      "first_close": 12.94663,
+      "first_date": "2004-01-01",
+      "last_close": 60.5,
+      "last_date": "2026-08-14",
+      "na_rows": 0,
+      "rows": 5576,
+      "sha256": "0bd46fff16ff9c0248cdfe7ac7ba6d6bd7a44c8b0bf0f860b9b9139ed3123f13"
+    },
+    "2002.TW": {
+      "first_close": 5.785791,
+      "first_date": "2004-01-01",
+      "last_close": 19.0,
+      "last_date": "2026-08-14",
+      "na_rows": 0,
+      "rows": 5576,
+      "sha256": "221ad5bc5b0ced21a06788056b8762c99b4e1b7f894a66b9f8bccd72b39f35fc"
+    },
+    "2207.TW": {
+      "first_close": 15.926698,
+      "first_date": "2004-01-01",
+      "last_close": 514.0,
+      "last_date": "2026-08-14",
+      "na_rows": 0,
+      "rows": 5576,
+      "sha256": "ced85c3c871a3c015756102e3c916a96c1afc5ef4b177b7eb8b7753a4a77664b"
+    },
+    "2301.TW": {
+      "first_close": 10.484603,
+      "first_date": "2004-01-01",
+      "last_close": 267.0,
+      "last_date": "2026-08-14",
+      "na_rows": 0,
+      "rows": 5576,
+      "sha256": "7212b9c6ffa4f7692f63cace4e3d0adddcd1d9510635d97fe3f8acbb7c3cf267"
+    },
+    "2303.TW": {
+      "first_close": 12.355628,
+      "first_date": "2004-01-01",
+      "last_close": 121.0,
+      "last_date": "2026-08-14",
+      "na_rows": 0,
+      "rows": 5576,
+      "sha256": "b9170115e2cb6e72e97edcdf0fc006e79d4743b0aac1eae01539f73258067494"
+    },
+    "2308.TW": {
+      "first_close": 15.664953,
+      "first_date": "2004-01-01",
+      "last_close": 1885.0,
+      "last_date": "2026-08-14",
+      "na_rows": 0,
+      "rows": 5576,
+      "sha256": "ddbd58b9101942110e61a2f442cc14014644de74afb2d01d22406782f4910707"
+    },
+    "2317.TW": {
+      "first_close": 17.370224,
+      "first_date": "2004-01-01",
+      "last_close": 259.5,
+      "last_date": "2026-08-14",
+      "na_rows": 0,
+      "rows": 5576,
+      "sha256": "8a8ad09d60a7d6933313e28ec6cc3e8cdb5788e325859d428234f839e9e8ed9d"
+    },
+    "2327.TW": {
+      "first_close": 5.401809,
+      "first_date": "2004-01-01",
+      "last_close": 622.0,
+      "last_date": "2026-08-14",
+      "na_rows": 0,
+      "rows": 5576,
+      "sha256": "daf43d88f0458f346d872bfec1224a02292a3c95898a6b958cf37874a7149cc4"
+    },
+    "2330.TW": {
+      "first_close": 23.445181,
+      "first_date": "2004-01-01",
+      "last_close": 2395.0,
+      "last_date": "2026-08-14",
+      "na_rows": 0,
+      "rows": 5576,
+      "sha256": "219252aeeff8e0621cb6f100f3e6a4829170116007862a02fe1d771c25d818dc"
+    },
+    "2345.TW": {
+      "first_close": 10.770679,
+      "first_date": "2004-01-01",
+      "last_close": 2300.0,
+      "last_date": "2026-08-14",
+      "na_rows": 0,
+      "rows": 5576,
+      "sha256": "d809186d91270982aaa7558fd1d556f9701ef2336fd36be6cdfbb2078f365613"
+    },
+    "2357.TW": {
+      "first_close": 40.822014,
+      "first_date": "2004-01-01",
+      "last_close": 996.0,
+      "last_date": "2026-08-14",
+      "na_rows": 0,
+      "rows": 5576,
+      "sha256": "b770b5a2713daeb43c13767abfb23edb53d616c1d89956560f758b0d3ccffa23"
+    },
+    "2379.TW": {
+      "first_close": 31.987814,
+      "first_date": "2004-01-01",
+      "last_close": 721.0,
+      "last_date": "2026-08-14",
+      "na_rows": 0,
+      "rows": 5576,
+      "sha256": "c2272bc8bbef234106e6b2e3377cef0cdb5c3b9b05b993b9e272de04a7d64ecc"
+    },
+    "2382.TW": {
+      "first_close": 17.72225,
+      "first_date": "2004-01-01",
+      "last_close": 327.5,
+      "last_date": "2026-08-14",
+      "na_rows": 0,
+      "rows": 5576,
+      "sha256": "63b6170d63c40fd97a94238d75f1f7cfb41e645e3a202aba4adddb0a5424b950"
+    },
+    "2395.TW": {
+      "first_close": 11.815293,
+      "first_date": "2004-01-01",
+      "last_close": 683.0,
+      "last_date": "2026-08-14",
+      "na_rows": 0,
+      "rows": 5576,
+      "sha256": "975e5a5a053386aaf87c035c1d8c70ffad9bd9b191ae80c08974ca6f4a1c87ac"
+    },
+    "2412.TW": {
+      "first_close": 16.755632,
+      "first_date": "2004-01-01",
+      "last_close": 135.0,
+      "last_date": "2026-08-14",
+      "na_rows": 0,
+      "rows": 5576,
+      "sha256": "8e834c09ba81c140625f643494adcc3d970b6d4088a31b33d28249cc4ca77f93"
+    },
+    "2454.TW": {
+      "first_close": 76.54557,
+      "first_date": "2004-01-01",
+      "last_close": 4210.0,
+      "last_date": "2026-08-14",
+      "na_rows": 0,
+      "rows": 5576,
+      "sha256": "da0a82f7fc22512644b8fc89ab0df714874087ba8254b115470ba857b78125f7"
+    },
+    "2603.TW": {
+      "first_close": 9.920947,
+      "first_date": "2004-01-01",
+      "last_close": 219.0,
+      "last_date": "2026-08-14",
+      "na_rows": 0,
+      "rows": 5576,
+      "sha256": "78b79b03c5cb59e48842380d62f64d6fe6170d6c63173b04082633c9bf8f74d7"
+    },
+    "2618.TW": {
+      "first_close": 11.24341,
+      "first_date": "2004-01-01",
+      "last_close": 39.900002,
+      "last_date": "2026-08-14",
+      "na_rows": 0,
+      "rows": 5576,
+      "sha256": "fe9f189fef2558e9e26b12c0f60a4519b2e9ba3996f89094ac8a945dca3968f6"
+    },
+    "2880.TW": {
+      "first_close": 4.512482,
+      "first_date": "2004-01-01",
+      "last_close": 38.950001,
+      "last_date": "2026-08-14",
+      "na_rows": 0,
+      "rows": 5576,
+      "sha256": "00c6b6119c79dcd8408d56af50ba446b7c5ab096bdf906925376c36f6b1cae6e"
+    },
+    "2881.TW": {
+      "first_close": 8.619261,
+      "first_date": "2004-01-01",
+      "last_close": 129.5,
+      "last_date": "2026-08-14",
+      "na_rows": 0,
+      "rows": 5576,
+      "sha256": "63cd8a6102d8eb864dc736dbb90639cf6a8234883fc4d7f27f284a02ab7fe6c6"
+    },
+    "2882.TW": {
+      "first_close": 15.779994,
+      "first_date": "2004-01-01",
+      "last_close": 101.5,
+      "last_date": "2026-08-14",
+      "na_rows": 0,
+      "rows": 5576,
+      "sha256": "be843b8a8d684218b0a37e816a9dea4610d9b7685facac93bf44d5b03be28694"
+    },
+    "2883.TW": {
+      "first_close": 5.703939,
+      "first_date": "2004-01-01",
+      "last_close": 31.65,
+      "last_date": "2026-08-14",
+      "na_rows": 0,
+      "rows": 5576,
+      "sha256": "fe63f696944429ed6230dc6959714fe0c01f1818a227379483f85dd02fb4c9f3"
+    },
+    "2884.TW": {
+      "first_close": 3.365691,
+      "first_date": "2004-01-01",
+      "last_close": 37.650002,
+      "last_date": "2026-08-14",
+      "na_rows": 0,
+      "rows": 5576,
+      "sha256": "2c32f10db27b2a448bcc96cfe0c3e85fd58e08bb2612a84202d6608b0d5e488d"
+    },
+    "2885.TW": {
+      "first_close": 3.615837,
+      "first_date": "2004-01-01",
+      "last_close": 69.699997,
+      "last_date": "2026-08-14",
+      "na_rows": 0,
+      "rows": 5576,
+      "sha256": "563da7772c7d256cc614f4e51bc4b6b86b109ba032c4a7d3ca6391aba17ce41a"
+    },
+    "2886.TW": {
+      "first_close": 5.924095,
+      "first_date": "2004-01-01",
+      "last_close": 47.349998,
+      "last_date": "2026-08-14",
+      "na_rows": 0,
+      "rows": 5576,
+      "sha256": "7cacf97f499c35bd3d4451fce2cde0e41519679a8fd21e86e84979942e4de416"
+    },
+    "2887.TW": {
+      "first_close": 4.785503,
+      "first_date": "2004-01-01",
+      "last_close": 37.75,
+      "last_date": "2026-08-14",
+      "na_rows": 0,
+      "rows": 5576,
+      "sha256": "35d7cb101c5c84ff2ab7c08ce4d3373dd6cc7d7b2e6ea2c21afad0d467d5f356"
+    },
+    "2890.TW": {
+      "first_close": 4.910424,
+      "first_date": "2004-01-01",
+      "last_close": 40.549999,
+      "last_date": "2026-08-14",
+      "na_rows": 0,
+      "rows": 5576,
+      "sha256": "1ef7ec23e9fa3f23eb9306c325f58d3d0b8eba081ac97fd15638323c7b84af0d"
+    },
+    "2891.TW": {
+      "first_close": 5.35086,
+      "first_date": "2004-01-01",
+      "last_close": 65.800003,
+      "last_date": "2026-08-14",
+      "na_rows": 0,
+      "rows": 5576,
+      "sha256": "a0723f7a2e9221c1c9dbc8ce186be88fa4b2d150efc381ff028ae0f54affe1d4"
+    },
+    "2892.TW": {
+      "first_close": 4.597146,
+      "first_date": "2004-01-01",
+      "last_close": 33.349998,
+      "last_date": "2026-08-14",
+      "na_rows": 0,
+      "rows": 5576,
+      "sha256": "8fe38546eb0a114f0e029075b90ac6e8581d79d7915fb752da4a80acfeed37f0"
+    },
+    "2912.TW": {
+      "first_close": 19.617622,
+      "first_date": "2004-01-01",
+      "last_close": 214.5,
+      "last_date": "2026-08-14",
+      "na_rows": 0,
+      "rows": 5576,
+      "sha256": "51d2ad0d5411e8c51ed70189f2bbb9ebfbb485f44c8eba73c99b526c7e762657"
+    },
+    "3008.TW": {
+      "first_close": 117.226349,
+      "first_date": "2004-01-01",
+      "last_close": 4610.0,
+      "last_date": "2026-08-14",
+      "na_rows": 0,
+      "rows": 5576,
+      "sha256": "34a6914b5a359e1da915e396a578904bf928a049d772e8f94aa1bd5f097474e8"
+    },
+    "3017.TW": {
+      "first_close": 11.796755,
+      "first_date": "2004-01-01",
+      "last_close": 3235.0,
+      "last_date": "2026-08-14",
+      "na_rows": 0,
+      "rows": 5576,
+      "sha256": "4a7f90950d3ab0611d931290325bd22303623c1066753840f94a6df46e6c511f"
+    },
+    "3034.TW": {
+      "first_close": 12.111746,
+      "first_date": "2004-01-01",
+      "last_close": 512.0,
+      "last_date": "2026-08-14",
+      "na_rows": 0,
+      "rows": 5576,
+      "sha256": "ef4f8533db648321c1f6068776038404f21dec93552fa272c9d028e12f8a1598"
+    },
+    "3037.TW": {
+      "first_close": 10.765241,
+      "first_date": "2004-01-01",
+      "last_close": 1020.0,
+      "last_date": "2026-08-14",
+      "na_rows": 0,
+      "rows": 5576,
+      "sha256": "b37f0f2ddcc8fa41dda3953da7e945661a5fedefc71fdcab89403f310002ec8f"
+    },
+    "3045.TW": {
+      "first_close": 12.231941,
+      "first_date": "2004-01-01",
+      "last_close": 108.0,
+      "last_date": "2026-08-14",
+      "na_rows": 0,
+      "rows": 5576,
+      "sha256": "64d81852346d5d64d5323f904a27b9f78a2934384f3d2e50e059d0a368531ed1"
+    },
+    "3231.TW": {
+      "first_close": 4.305259,
+      "first_date": "2004-01-01",
+      "last_close": 193.5,
+      "last_date": "2026-08-14",
+      "na_rows": 0,
+      "rows": 5576,
+      "sha256": "dbb6eefb4ee446866cb17a845731832f33b5de49f49cb12d4c2d98c3f81a86cb"
+    },
+    "3661.TW": {
+      "first_close": 32.704472,
+      "first_date": "2012-10-05",
+      "last_close": 4210.0,
+      "last_date": "2026-08-14",
+      "na_rows": 0,
+      "rows": 3377,
+      "sha256": "0e4c18d2f95ab5fb03b57e8a76b1f6e36c5e1345a77f5364069432ddc5857b6f"
+    },
+    "3711.TW": {
+      "first_close": 15.242064,
+      "first_date": "2004-01-01",
+      "last_close": 616.0,
+      "last_date": "2026-08-14",
+      "na_rows": 0,
+      "rows": 5576,
+      "sha256": "a74bdeaabd4bee3a157fd8fcc556eed02c3d2dfcc550147c7ae858444c4d87b9"
+    },
+    "4904.TW": {
+      "first_close": 17.554873,
+      "first_date": "2005-08-24",
+      "last_close": 99.0,
+      "last_date": "2026-08-14",
+      "na_rows": 0,
+      "rows": 5147,
+      "sha256": "dac1104ac877f3fc246d9dceaf26d6e4d0f73654a8cb3fc77c24dc345b8f9e10"
+    },
+    "4938.TW": {
+      "first_close": 95.692459,
+      "first_date": "2009-01-12",
+      "last_close": 94.800003,
+      "last_date": "2026-08-14",
+      "na_rows": 0,
+      "rows": 4305,
+      "sha256": "bfc7338ea71002e60431ea5e9d8f99b002caea23375f021700ac145d4f9ad818"
+    },
+    "5871.TW": {
+      "first_close": 8.396653,
+      "first_date": "2011-12-13",
+      "last_close": 111.5,
+      "last_date": "2026-08-14",
+      "na_rows": 0,
+      "rows": 3579,
+      "sha256": "013f81d70e612fd94ef79737680f9e38c948f220885c28ca61a2c9d773469394"
+    },
+    "5876.TW": {
+      "first_close": 23.238842,
+      "first_date": "2014-09-25",
+      "last_close": 42.349998,
+      "last_date": "2026-08-14",
+      "na_rows": 0,
+      "rows": 2893,
+      "sha256": "173e6597c58d1a80432a657fdcc388bc008bc824508d78a468d5b9f19e3d558d"
+    },
+    "5880.TW": {
+      "first_close": 3.598271,
+      "first_date": "2004-01-01",
+      "last_close": 24.200001,
+      "last_date": "2026-08-14",
+      "na_rows": 0,
+      "rows": 5576,
+      "sha256": "1d8a5a151cea781706fa72decd4f6f2f01a528737a0085e20a74f7f13614d3a9"
+    },
+    "6505.TW": {
+      "first_close": 16.929092,
+      "first_date": "2004-01-01",
+      "last_close": 70.900002,
+      "last_date": "2026-08-14",
+      "na_rows": 0,
+      "rows": 5576,
+      "sha256": "84df3bf42a73c40f997309e12171a640f954a3303f2a066feca5e397bf225a13"
+    },
+    "6669.TW": {
+      "first_close": 83.869881,
+      "first_date": "2017-11-13",
+      "last_close": 6435.0,
+      "last_date": "2026-08-14",
+      "na_rows": 0,
+      "rows": 2127,
+      "sha256": "4cb2503c2b1d9f832844826db0b37527353b660648a067603b78be72010d0d28"
+    },
+    "TWII": {
+      "first_close": 6041.532227,
+      "first_date": "2004-01-02",
+      "last_close": 45811.011719,
+      "last_date": "2026-08-14",
+      "na_rows": 0,
+      "rows": 5539,
+      "sha256": "ad056f64d4c27fc0fcefb86007b427b65352a428f4f1592b181d29def15fbd90"
+    }
+  },
+  "manifest_sha": "93f02227d7442c35f20a4a9db94035cc838a54b52d6fe85a67096a7c7940095f",
+  "n_files": 50,
+  "snapshot_at": "2026-08-16T06:07:28+00:00",
+  "versions": {
+    "pandas": "3.0.3",
+    "pyarrow": "25.0.0",
+    "yfinance": "1.5.1"
+  }
+}
