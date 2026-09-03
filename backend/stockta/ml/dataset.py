@@ -22,6 +22,7 @@ from stockta.config import (
 )
 from stockta.features.pipeline import build_features
 from stockta.ml.labeling import make_labels
+from stockta.ml.leakage import permute_labels, permute_labels_pooled, ticker_seed
 
 
 @dataclass
@@ -48,6 +49,8 @@ def build_dataset(
     train_end: str | pd.Timestamp | None = None,
     val_end: str | pd.Timestamp | None = None,
     test_end: str | pd.Timestamp | None = None,
+    label_permutation_seed: int | None = None,
+    label_permutation_scope: str = "pooled",
 ) -> Dataset:
     """由多檔股票的 OHLCV 與市場情境 context 建出訓練/驗證/測試集。
 
@@ -57,16 +60,35 @@ def build_dataset(
 
     train_end/val_end 預設取 config 的正式切分；walk-forward 實驗（#9）需要逐折
     改變切分點，故開放覆寫。test_end 可再把測試期截在某日之前（折與折之間不重疊）。
+
+    label_permutation_seed 給值時，標籤會在**切分之前**被隨機置換——這是打亂標籤
+    測試（ml/leakage.py）的入口，正式訓練一律留 None。置換在切分前完成，是為了讓
+    train/val/test 共用同一份假標籤，跨切分的重複樣本才抓得出來。
+
+    label_permutation_scope 決定置換範圍，**預設 "pooled"（正確的虛無假設）**：
+    - "pooled"：全池匯總後再洗，所有樣本可交換。
+    - "per_ticker"：逐檔各洗各的。這會**保留各檔標籤分佈的差異**（高波動股較多
+      漲/跌、牛皮股較多觀望），而特徵認得出是哪一類股票，虛無分佈因此落在 0.577
+      而非 0.5——看起來像洩漏，其實只是虛無假設沒設乾淨。保留此選項是為了能重現
+      這個對照（見 docs/leakage_report.md），不要拿它當主測試。
     """
+    if label_permutation_scope not in ("pooled", "per_ticker"):
+        raise ValueError(f"label_permutation_scope 必須是 pooled 或 per_ticker，收到 {label_permutation_scope!r}")
     train_end = pd.Timestamp(train_end or SPLIT_TRAIN_END)
     val_end = pd.Timestamp(val_end or SPLIT_VAL_END)
     test_end_ts = pd.Timestamp(test_end) if test_end else None
 
     feats: list[tuple[pd.DataFrame, pd.Series]] = []
-    for ohlcv in ohlcv_by_ticker.values():
+    for ticker, ohlcv in ohlcv_by_ticker.items():
         f = build_features(ohlcv, context)
         labels = make_labels(ohlcv["close"]).reindex(f.index)
+        if label_permutation_seed is not None and label_permutation_scope == "per_ticker":
+            labels = permute_labels(labels, ticker_seed(ticker, label_permutation_seed))
         feats.append((f, labels))
+
+    if label_permutation_seed is not None and label_permutation_scope == "pooled":
+        permuted = permute_labels_pooled([lab for _, lab in feats], label_permutation_seed)
+        feats = [(f, lab) for (f, _), lab in zip(feats, permuted)]
 
     feat_cols = feats[0][0].columns
     # scaler 只 fit 訓練期的列，驗證/測試期的分佈對 scaler 不可見
