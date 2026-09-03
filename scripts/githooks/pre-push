@@ -1,0 +1,23 @@
+#!/bin/sh
+# git pre-push hook: block the push if the data-leakage regression tests fail.
+#
+# Enable once with:  powershell -File scripts/install_hooks.ps1
+# (equivalent to:    git config core.hooksPath scripts/githooks)
+#
+# Why pre-push and not pre-commit: these tests train models, so they take
+# seconds rather than milliseconds. On every commit that is annoying enough
+# that people start bypassing it; on push it fires once, when work actually
+# leaves the machine.
+#
+# To skip deliberately: git push --no-verify (say why in the commit or PR).
+#
+# Kept ASCII-only so the output is readable regardless of console codepage.
+set -e
+
+root="$(git rev-parse --show-toplevel)"
+python="$root/backend/.venv/Scripts/python.exe"
+[ -x "$python" ] || python="python"
+
+echo "pre-push: running data-leakage regression tests (pytest -m leakage)..."
+cd "$root/backend"
+"$python" -m pytest -m leakage --quiet
