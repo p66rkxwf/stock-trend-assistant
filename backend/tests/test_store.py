@@ -34,3 +34,18 @@ def test_rank_store_coexists_with_prediction_store(tmp_path):
     ranks.record("2330.TW", date(2026, 7, 9), 0.61, "xgb-cs-2026-07-26")
     assert preds.count() == 1
     assert ranks.count() == 1
+
+
+def test_recorded_pairs_are_per_ticker_not_per_day(tmp_path):
+    # 同一天只記到一檔時，其他檔仍須被視為「未記錄」——否則雲端抓取部分失敗的那幾檔永遠補不回來
+    from stockta.ml.record_predictions import _recorded_pairs
+    from stockta.ml.record_rank_predictions import _recorded_rank_pairs
+
+    db = tmp_path / "predictions.db"
+    PredictionStore(db).record("2330.TW", date(2026, 9, 24), "漲", 0.7, "gru-x")
+    RankPredictionStore(db).record("2330.TW", date(2026, 9, 24), 0.6, "xgb-cs-x")
+
+    assert _recorded_pairs(db, "gru-x") == {("2330.TW", "2026-09-24")}
+    assert ("2317.TW", "2026-09-24") not in _recorded_pairs(db, "gru-x")
+    assert _recorded_pairs(db, "other-version") == set()
+    assert _recorded_rank_pairs(db, "xgb-cs-x") == {("2330.TW", "2026-09-24")}

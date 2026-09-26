@@ -43,20 +43,23 @@ from stockta.ml.report_rank_predictions import cs_production_version
 _CONTEXT_EXTRA_DAYS = 60
 
 
-def _recorded_rank_base_dates(db_path, version: str) -> set[str]:
-    """該版本已記錄過的 rank 基準日集合（供冪等自癒：跳過已補上的日子）。"""
+def _recorded_rank_pairs(db_path, version: str) -> set[tuple[str, str]]:
+    """該版本已記錄過的 (ticker, rank 基準日) 集合（供冪等自癒：跳過已補上的）。
+    以「標的×日」為單位的理由見 record_predictions._recorded_pairs。"""
     conn = sqlite3.connect(db_path)
     try:
         rows = conn.execute(
-            "SELECT DISTINCT base_date FROM rank_predictions WHERE model_version=?", (version,)
+            "SELECT ticker, base_date FROM rank_predictions WHERE model_version=?", (version,)
         ).fetchall()
     except sqlite3.OperationalError:
         rows = []
     conn.close()
-    return {r[0] for r in rows}
+    return {(r[0], r[1]) for r in rows}
 
 
-def run_live(store: RankPredictionStore, model, scaler, version: str, days: int) -> int:
+def run_live(
+    store: RankPredictionStore, model, scaler, version: str, days: int, require_complete: bool = False
+) -> int:
     """即時評分全池並記錄最近 N 個交易日（冪等自癒漏記）。當日最新交易日記 source=live，
     因資料延遲而回補的較舊交易日記 source=pit（分數對固定權重逐位元一致，僅記錄時點不同）。"""
     provider = YFinanceProvider(cache=ParquetCache(DATA_CACHE_DIR), auto_adjust=AUTO_ADJUST)
@@ -79,19 +82,29 @@ def run_live(store: RankPredictionStore, model, scaler, version: str, days: int)
 
     recent_days = list(context.index[-days:])
     newest = recent_days[-1] if recent_days else None
-    already = _recorded_rank_base_dates(PREDICTIONS_DB_PATH, version)
+    already = _recorded_rank_pairs(PREDICTIONS_DB_PATH, version)
     covered: list[str] = []
+    missing: list[str] = []
     total = 0
     for as_of in recent_days:
-        if as_of.date().isoformat() in already:
-            continue
+        day = as_of.date().isoformat()
         src = "live" if as_of == newest else "pit"
         day_ok = 0
-        for ticker, df in pool_ohlcv.items():
+        for ticker in STOCK_POOL:
+            if (ticker, day) in already:
+                continue
+            df = pool_ohlcv.get(ticker)
+            if df is None:
+                missing.append(f"{ticker}@{day}")
+                continue
             r = score_asof(model, scaler, df, context, as_of)
             if r is None:
                 continue
             score, base_date = r
+            # 當日 K 棒不在（下載失敗退回舊快取）→ 不記，留給下次補
+            if base_date != as_of.date():
+                missing.append(f"{ticker}@{day}")
+                continue
             store.record(ticker, base_date, score, version, source=src)
             day_ok += 1
         if day_ok:
@@ -102,6 +115,9 @@ def run_live(store: RankPredictionStore, model, scaler, version: str, days: int)
         print(f"live：新記錄 {'、'.join(covered)}（{total} 筆），累計 {store.count()} 筆 rank_predictions（{version}）")
     else:
         print(f"live：最近 {days} 交易日皆已記錄、無新增；累計 {store.count()} 筆 rank_predictions（{version}）")
+    if missing:
+        print(f"[未完成] {len(missing)} 筆缺當日資料、待下次補：{'、'.join(missing[:10])}")
+        return 2 if require_complete else 0
     return 0
 
 
@@ -152,6 +168,10 @@ def main() -> int:
         "--days", type=int, default=LABEL_HORIZON_DAYS,
         help="回補最近 N 個交易日（冪等自癒漏記；預設=標籤天數，回補日結果尚未實現、無前視）",
     )
+    p_live.add_argument(
+        "--require-complete", action="store_true",
+        help="有標的缺當日資料時以 exit 2 結束（雲端排程據此觸發補跑）；已取得的照常記錄",
+    )
     sub.add_parser("backfill", help="point-in-time 重建既有絕對預測相同的歷史基準日")
     args = parser.parse_args()
 
@@ -160,7 +180,11 @@ def main() -> int:
     store = RankPredictionStore(PREDICTIONS_DB_PATH)
     if args.cmd == "backfill":
         return run_backfill(store, model, scaler, version)
-    return run_live(store, model, scaler, version, getattr(args, "days", LABEL_HORIZON_DAYS))
+    return run_live(
+        store, model, scaler, version,
+        getattr(args, "days", LABEL_HORIZON_DAYS),
+        getattr(args, "require_complete", False),
+    )
 
 
 if __name__ == "__main__":
