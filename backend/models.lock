@@ -1,0 +1,6 @@
+# 雲端排程使用的正式模型 artifact（檔案本身不進 git，放 GitHub Release）。
+# scripts/fetch_models.sh 依此下載並驗證 sha256——雜湊不符＝不是訓練時那份模型，拒絕執行。
+# 換模型：上傳新 Release（新 tag）→ 更新此檔的 tag/sha256。
+# tag        asset           sha256                                                            path
+models-v1    gru.joblib      75446f4be9c4339eb2714477a07fc813f9c5b8be28b08163d9ee5ac9085226b0  backend/artifacts/gru/model.joblib
+models-v1    cs-xgb.joblib   6004d2aa9410d675bcfe392cb0837ddba894031dd1041c9c086c83d35d82f63d  backend/artifacts_cs/xgb/model.joblib

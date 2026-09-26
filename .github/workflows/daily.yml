@@ -1,0 +1,198 @@
+# 每日排程：取代 Windows 工作排程器的 daily_predict.bat，並部署靜態站 stock.sekinv.com。
+#
+# 流程：還原狀態 → 記錄線上預測（絕對方向＋相對強弱）→ 重生報告 → 匯出靜態 JSON
+#      → build → 部署 Cloudflare Pages → 保存狀態。
+#
+# 狀態（predictions.db、價格快取、線上實證報告、上一版網站資料）存在孤立分支 state，
+# 每次覆寫成單一 commit（SQLite/parquet 每天整檔改寫，保留歷史會讓 repo 無限長大）；
+# 另存 30 天的 artifact 供回復。資料庫只要通過完整性檢查就保存——後面步驟失敗
+# 也不丟掉已記錄的預測；site-data 只在正式站部署成功後才更新。
+#
+# 失敗時不部署：匯出關卡（stockta/export_static.py）擋下 mock 模型、資料日期倒退、
+# 覆蓋率不足，線上維持上一版，頁尾的「資料截至」會顯示過期警示。
+name: daily
+
+on:
+  schedule:
+    - cron: "20 7 * * 1-5" # 台北 15:20（台股 13:30 收盤；舊排程 15:00）
+    - cron: "50 8 * * 1-5" # 台北 16:50 補跑：前一次缺資料或未執行時補上；已完成則提早結束
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "Cloudflare Pages 分支（master＝正式站；其他名稱＝preview 預覽網址）"
+        default: master
+      force:
+        description: "今日已完成也重跑"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write # 推 state 分支、下載 Release 模型
+  actions: write # keepalive：公開 repo 60 天無活動會自動停用排程
+
+concurrency:
+  group: site # 與 deploy.yml 共用：同一時間只有一個在寫狀態或部署
+  cancel-in-progress: false
+
+env:
+  PYTHONIOENCODING: utf-8
+  PAGES_BRANCH: ${{ inputs.branch || 'master' }}
+
+jobs:
+  daily:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 取出狀態分支
+        uses: actions/checkout@v4
+        with:
+          ref: state
+          path: _state
+
+      - name: 今日已完成則略過（補跑用）
+        id: guard
+        run: |
+          today=$(TZ=Asia/Taipei date +%F)
+          done_for=$(python3 -c "import json;print(json.load(open('_state/STATE.json')).get('last_success_for',''))" 2>/dev/null || true)
+          if [ "${done_for}" = "${today}" ] && [ "${{ inputs.force }}" != "true" ] && [ "${{ github.event_name }}" = "schedule" ]; then
+            echo "今日（${today}）已完成，略過"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: 還原狀態
+        if: steps.guard.outputs.skip != 'true'
+        run: |
+          cp _state/predictions.db backend/
+          cp _state/data_cache/*.parquet backend/data_cache/
+          # 價格快取以檔案修改時間判斷新舊（ParquetCache.is_fresh）；checkout 出來的時間是「現在」，
+          # 不重設會被誤判為最新而跳過下載，悄悄用舊 K 棒預測。設為 3 天前：即時路徑（門檻 1 天）
+          # 會重抓，歷史回放（門檻 9999 天）照常只讀快取。
+          touch -d '3 days ago' backend/data_cache/*.parquet
+
+      - uses: actions/setup-python@v5
+        if: steps.guard.outputs.skip != 'true'
+        with:
+          python-version: "3.12.10"
+          cache: pip
+          cache-dependency-path: |
+            backend/pyproject.toml
+            backend/requirements-ci.txt
+
+      - name: 安裝相依（版本鎖定；CPU 版 torch）
+        if: steps.guard.outputs.skip != 'true'
+        run: |
+          pip install torch==2.11.0 --index-url https://download.pytorch.org/whl/cpu
+          pip install -e "backend[dev]" -c backend/requirements-ci.txt
+
+      - name: 取得模型（GitHub Release，驗證 sha256）
+        if: steps.guard.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: scripts/fetch_models.sh
+
+      - name: 記錄線上預測並重生報告
+        if: steps.guard.outputs.skip != 'true'
+        id: record
+        working-directory: backend
+        run: |
+          set +e
+          python -m stockta.ml.record_predictions --require-complete; a=$?
+          python -m stockta.ml.record_rank_predictions live --require-complete; b=$?
+          set -e
+          python -m stockta.ml.report_predictions
+          python -m stockta.ml.report_rank_predictions
+          # exit 1＝大盤指數抓不到（整體失敗）；exit 2＝部分標的缺當日資料（已取得的照常記錄，補跑或隔日自癒）
+          if [ $a -eq 1 ] || [ $b -eq 1 ]; then exit 1; fi
+          if [ $a -eq 2 ] || [ $b -eq 2 ]; then echo "incomplete=true" >> "$GITHUB_OUTPUT"; fi
+
+      - name: 資料庫完整性檢查
+        if: always() && steps.guard.outputs.skip != 'true'
+        id: integrity
+        run: |
+          python -c "import sqlite3,sys; r=sqlite3.connect('backend/predictions.db').execute('PRAGMA integrity_check').fetchone()[0]; print(r); sys.exit(r!='ok')"
+
+      - name: 匯出靜態 JSON（含發布關卡）
+        if: steps.guard.outputs.skip != 'true'
+        working-directory: backend
+        run: python -m stockta.export_static --out ../frontend/public/data --prev ../_state/site-data/meta.json
+
+      - uses: actions/setup-node@v4
+        if: steps.guard.outputs.skip != 'true'
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Build 靜態站
+        if: steps.guard.outputs.skip != 'true'
+        working-directory: frontend
+        env:
+          NEXT_PUBLIC_STATIC_DATA: "1"
+          NEXT_PUBLIC_NEWS_API_BASE: https://news.sekinv.com
+        run: |
+          npm ci --no-audit --no-fund
+          npm run build
+
+      - name: 部署 Cloudflare Pages
+        if: steps.guard.outputs.skip != 'true'
+        id: deploy
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy frontend/out --project-name=stock-trend-assistant --branch=${{ env.PAGES_BRANCH }} --commit-dirty=true
+
+      - name: 保存狀態
+        if: always() && steps.integrity.outcome == 'success'
+        run: |
+          cd _state
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          prev=$(mktemp -d)
+          cp -r site-data STATE.json "${prev}/" 2>/dev/null || true
+          git checkout -q --orphan next
+          git rm -rfq . && rm -rf ./*
+          mkdir -p data_cache reports
+          cp ../backend/predictions.db .
+          cp ../backend/data_cache/*.parquet data_cache/
+          cp ../docs/online_predictions.md ../docs/online_rank_ic.md reports/
+          if [ "${{ steps.deploy.outcome }}" = "success" ] && [ "${PAGES_BRANCH}" = "master" ]; then
+            cp -r ../frontend/public/data site-data
+          else
+            cp -r "${prev}/site-data" site-data 2>/dev/null || true
+          fi
+          ok_for=""
+          if [ "${{ steps.deploy.outcome }}" = "success" ] && [ "${{ steps.record.outputs.incomplete }}" != "true" ]; then
+            ok_for=$(TZ=Asia/Taipei date +%F)
+          else
+            ok_for=$(python3 -c "import json;print(json.load(open('${prev}/STATE.json')).get('last_success_for',''))" 2>/dev/null || true)
+          fi
+          python3 - "${ok_for}" <<'PY'
+          import json, os, sys
+          json.dump({
+              "run_id": os.environ["GITHUB_RUN_ID"],
+              "run_url": f"{os.environ['GITHUB_SERVER_URL']}/{os.environ['GITHUB_REPOSITORY']}/actions/runs/{os.environ['GITHUB_RUN_ID']}",
+              "saved_at_taipei": os.popen("TZ=Asia/Taipei date -Iseconds").read().strip(),
+              "last_success_for": sys.argv[1],
+          }, open("STATE.json", "w"), ensure_ascii=False, indent=1)
+          PY
+          git add -A
+          git commit -qm "state: run ${GITHUB_RUN_ID}"
+          git push -qf origin next:state
+
+      - name: 備份狀態（artifact，保留 30 天）
+        if: always() && steps.integrity.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: state-${{ github.run_id }}
+          path: _state
+          include-hidden-files: false
+          retention-days: 30
+
+      - name: Keepalive
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X PUT "repos/${GITHUB_REPOSITORY}/actions/workflows/daily.yml/enable" || true

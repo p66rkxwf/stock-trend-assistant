@@ -1,0 +1,56 @@
+# 只改前端時重新部署：拿 state 分支上「上一版正式發布的資料」（site-data）重新 build，
+# 不跑 Python、不動資料。與 daily.yml 共用 concurrency group，不會拿舊資料蓋掉剛部署的新版。
+name: deploy
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "frontend/**"
+      - ".github/workflows/deploy.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: site
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 取出狀態分支
+        uses: actions/checkout@v4
+        with:
+          ref: state
+          path: _state
+
+      - name: 放入上一版網站資料
+        run: cp -r _state/site-data frontend/public/data
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Build 靜態站
+        working-directory: frontend
+        env:
+          NEXT_PUBLIC_STATIC_DATA: "1"
+          NEXT_PUBLIC_NEWS_API_BASE: https://news.sekinv.com
+        run: |
+          npm ci --no-audit --no-fund
+          npm run build
+
+      - name: 部署 Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy frontend/out --project-name=stock-trend-assistant --branch=master --commit-dirty=true
