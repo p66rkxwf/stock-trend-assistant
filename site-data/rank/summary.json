@@ -1,0 +1,1 @@
+{"model":"xgb","test_rank_ic":0.04373957206996269,"test_rank_ic_t":2.1769927993329947,"val_rank_ic":0.042676724365233794,"holding_days":20,"net_cum":1.3165069291270135,"bench_cum":0.8976785233267053,"net_excess_cum":0.4188284058003082,"win_rate":0.6111111111111112,"cost_bps":58.5,"available":true}
