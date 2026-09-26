@@ -40,10 +40,14 @@ export function sentimentTickerFor(twTicker: string): { ticker: string; isProxy:
   return adr ? { ticker: adr, isProxy: false } : { ticker: MARKET_PROXY, isProxy: true };
 }
 
+const STATIC_DATA = process.env.NEXT_PUBLIC_STATIC_DATA === "1";
+
 export async function fetchSentiment(usTicker: string): Promise<SentimentResponse> {
-  const res = await fetch(
-    `${NEWS_API_BASE}/api/stocks/${encodeURIComponent(usTicker)}/sentiment`,
-  );
+  // 靜態站：讀新聞站每日匯出的 JSON（news.sekinv.com 以 _headers 開放跨站讀取 /data/*）
+  const path = STATIC_DATA
+    ? `/data/stocks/${encodeURIComponent(usTicker)}/sentiment.json`
+    : `/api/stocks/${encodeURIComponent(usTicker)}/sentiment`;
+  const res = await fetch(`${NEWS_API_BASE}${path}`);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json() as Promise<SentimentResponse>;
 }

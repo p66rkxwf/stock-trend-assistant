@@ -17,6 +17,9 @@
 /.next/
 /out/
 
+# 靜態站資料：每日排程由 backend/stockta/export_static.py 產生，不進版控
+/public/data/
+
 # production
 /build
 
@@ -39,3 +42,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# wrangler pages dev 的本機暫存
+.wrangler/

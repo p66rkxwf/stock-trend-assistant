@@ -5,6 +5,14 @@
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:8000";
 
+/**
+ * 靜態站模式（Cloudflare Pages）：沒有後端，改讀每日排程匯出的 /data/*.json
+ * （backend/stockta/export_static.py）。帶參數的端點由下方 staticApi 在瀏覽器端切片，
+ * 規則逐一對照後端路由；本機開發不設此變數，照舊呼叫 uvicorn。
+ */
+export const STATIC_DATA = process.env.NEXT_PUBLIC_STATIC_DATA === "1";
+const DATA_BASE = "/data";
+
 export type Signal = "漲" | "跌" | "觀望";
 export type RiskLevel = "低" | "中" | "高";
 
@@ -178,14 +186,21 @@ export class ApiError extends Error {
   }
 }
 
-async function request<T>(path: string): Promise<T> {
+async function request<T>(path: string, base: string = API_BASE): Promise<T> {
   let res: Response;
   try {
-    res = await fetch(`${API_BASE}${path}`);
+    res = await fetch(`${base}${path}`);
   } catch {
-    throw new ApiError(0, "NETWORK_ERROR", "無法連線到後端服務，請確認 API 已啟動");
+    throw new ApiError(
+      0,
+      "NETWORK_ERROR",
+      STATIC_DATA ? "資料暫時無法取得，請稍後再試" : "無法連線到後端服務，請確認 API 已啟動",
+    );
   }
   if (!res.ok) {
+    if (STATIC_DATA && res.status === 404) {
+      throw new ApiError(404, "NOT_FOUND", "此項資料今日未產生（每日排程匯出時失敗）");
+    }
     const body = await res.json().catch(() => null);
     const err = body?.error;
     throw new ApiError(res.status, err?.code ?? "UNKNOWN", err?.message ?? `HTTP ${res.status}`);
@@ -193,7 +208,7 @@ async function request<T>(path: string): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-export const api = {
+const liveApi = {
   stocks: () => request<{ stocks: StockInfo[] }>("/api/stocks"),
   candles: (ticker: string, range: string, start?: string, end?: string) => {
     const q =
@@ -221,3 +236,119 @@ export const api = {
       `/api/stocks/${encodeURIComponent(ticker)}/history?start=${start}&end=${end}`,
     ),
 };
+
+/** 靜態站的匯出摘要（export_static.py 的 meta.json）。 */
+export interface SiteMeta {
+  generated_at: string; // ISO UTC
+  last_trading_day: string; // API 推論錨點；candles 區間的終點
+  data_as_of: string; // 實際最後一根 K 棒
+  model_version: string;
+  cs_model: string | null;
+  range_days: Record<string, number>;
+  candles_start: string;
+  history_start: string;
+}
+
+interface DatedIndex {
+  latest: string;
+  sessions: string[];
+  dates: string[];
+}
+
+const staticGet = <T>(path: string) => request<T>(path, DATA_BASE);
+const enc = encodeURIComponent;
+
+let metaPromise: Promise<SiteMeta> | null = null;
+export function siteMeta(): Promise<SiteMeta> {
+  metaPromise ??= staticGet<SiteMeta>("/meta.json").catch((e) => {
+    metaPromise = null; // 失敗不快取，下次重試
+    throw e;
+  });
+  return metaPromise;
+}
+
+function addDays(iso: string, days: number): string {
+  const d = new Date(`${iso}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+function assertOrdered(start: string, end: string) {
+  if (start >= end) throw new ApiError(422, "INVALID_RANGE", `起日需早於迄日：${start} ~ ${end}`);
+}
+
+/** scan/rank 查歷史某日：同 API，≥ 錨點日走即時；否則對齊到 ≤ 查詢日的最後一個交易日。 */
+async function staticDated<T>(kind: "scan" | "rank", date?: string): Promise<T> {
+  if (!date) return staticGet<T>(`/${kind}/latest.json`);
+  const [meta, idx] = await Promise.all([siteMeta(), staticGet<DatedIndex>(`/${kind}/index.json`)]);
+  if (date >= meta.last_trading_day) return staticGet<T>(`/${kind}/latest.json`);
+  const session = [...idx.sessions].reverse().find((d) => d <= date);
+  if (!session) {
+    throw new ApiError(422, "OUT_OF_RANGE", `靜態站保留最近 ${idx.sessions.length} 個交易日（${idx.sessions[0]} 起）`);
+  }
+  if (!idx.dates.includes(session)) {
+    throw new ApiError(404, "NOT_FOUND", `${session} 的資料今日未產生（每日排程匯出時失敗）`);
+  }
+  return staticGet<T>(`/${kind}/${session}.json`);
+}
+
+const staticApi: typeof liveApi = {
+  stocks: () => staticGet("/stocks.json"),
+  candles: async (ticker, range, start, end) => {
+    const [meta, full] = await Promise.all([
+      siteMeta(),
+      staticGet<CandlesResponse>(`/stocks/${enc(ticker)}/candles.json`),
+    ]);
+    let lo: string;
+    let hi: string;
+    if (start && end) {
+      assertOrdered(start, end);
+      if (start < meta.candles_start) {
+        throw new ApiError(422, "OUT_OF_RANGE", `靜態站 K 線僅提供 ${meta.candles_start} 之後的資料`);
+      }
+      [lo, hi] = [start, end];
+    } else {
+      const days = meta.range_days[range];
+      if (days == null) throw new ApiError(422, "INVALID_RANGE", `不支援的 range 參數: ${range}`);
+      hi = meta.last_trading_day;
+      lo = addDays(hi, -days);
+    }
+    // 後端 _slice 兩端皆含
+    return { ticker: full.ticker, candles: full.candles.filter((c) => c.time >= lo && c.time <= hi) };
+  },
+  prediction: (ticker) => staticGet(`/stocks/${enc(ticker)}/prediction.json`),
+  modelInfo: () => staticGet("/model.json"),
+  indicators: (ticker) => staticGet(`/stocks/${enc(ticker)}/indicators.json`),
+  market: () => staticGet("/market.json"),
+  predictionHistory: (ticker) => staticGet(`/stocks/${enc(ticker)}/predictions.json`),
+  trackRecord: () => staticGet("/track-record.json"),
+  scan: (date) => staticDated("scan", date),
+  rank: (date) => staticDated("rank", date),
+  rankSummary: () => staticGet("/rank/summary.json"),
+  stockHistory: async (ticker, start, end) => {
+    const [meta, full] = await Promise.all([
+      siteMeta(),
+      staticGet<StockHistoryResponse>(`/stocks/${enc(ticker)}/history.json`),
+    ]);
+    assertOrdered(start, end);
+    if (start < meta.history_start) {
+      throw new ApiError(422, "OUT_OF_RANGE", `靜態站僅提供 ${meta.history_start} 之後的歷史回放`);
+    }
+    // 後端 history_series 取 (start, end]、新到舊；命中率依篩選後重算。
+    // 匯出檔從 history_start 起算指標暖機，與以使用者 start 起算的差異在
+    // test_feature_parity 的 1e-4 容忍度內。
+    const records = full.records.filter((r) => r.date > start && r.date <= end);
+    const hits = records.filter((r) => r.hit).length;
+    return {
+      ticker: full.ticker,
+      start,
+      end,
+      count: records.length,
+      hits,
+      hit_rate: records.length ? hits / records.length : null,
+      records,
+    };
+  },
+};
+
+export const api = STATIC_DATA ? staticApi : liveApi;

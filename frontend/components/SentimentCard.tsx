@@ -49,7 +49,9 @@ export default function SentimentCard({ twTicker }: { twTicker: string }) {
 
       {unavailable && (
         <p className="mt-4 rounded-lg bg-surface-2 px-3 py-2 text-xs text-ink-3">
-          情緒服務未啟動（news-sentiment-monitor 後端 :8001）。
+          {process.env.NEXT_PUBLIC_STATIC_DATA === "1"
+            ? "情緒資料暫時無法取得。"
+            : "情緒服務未啟動（news-sentiment-monitor 後端 :8001）。"}
         </p>
       )}
 
