@@ -9,7 +9,13 @@ while read -r tag asset sha path; do
   [[ -z "${tag}" || "${tag}" == \#* ]] && continue
   if ! echo "${sha}  ${path}" | sha256sum --check --status 2>/dev/null; then
     mkdir -p "$(dirname "${path}")"
-    gh release download "${tag}" --pattern "${asset}" --output "${path}" --clobber
+    # 大檔（數百 MB）偶爾下載到一半連線被重設：重試 3 次
+    for attempt in 1 2 3; do
+      gh release download "${tag}" --pattern "${asset}" --output "${path}" --clobber && break
+      [[ ${attempt} -eq 3 ]] && exit 1
+      echo "下載 ${asset} 失敗，第 ${attempt} 次重試…" >&2
+      sleep $((attempt * 10))
+    done
   fi
   echo "${sha}  ${path}" | sha256sum --check -
 done < backend/models.lock
